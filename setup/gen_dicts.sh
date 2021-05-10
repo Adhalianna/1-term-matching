@@ -15,14 +15,14 @@ case $1 in
         common_requirements
         wikidict_requirements
         ;;
-    "wiki")
+    "wikidict")
         common_requirements
         wikidict_requirements
         ;;
     *)
         echo "Choose which generator to run, available options are:"
         echo "  all - generate all dictionaries."
-        echo "  wiki - generate only wikipedia based dictionary."\
+        echo "  wikidict - generate only wikipedia based dictionary."\
         "The wikipedia based dictionary is a small dictionary of computer science related terms."\
         "The list of terms used can be modified by editing the file at setup/dictionaries/wikidict.txt"
         exit 1;
