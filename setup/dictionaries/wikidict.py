@@ -1,6 +1,6 @@
 #!/usr/bin/python3.9
 import wikipedia #https://towardsdatascience.com/wikipedia-api-for-python-241cfae09f1c
-import psycopg2 
+import psycopg2 #https://wiki.postgresql.org/wiki/Psycopg2_Tutorial
 
 # Database 
 try:
