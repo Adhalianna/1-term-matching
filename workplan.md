@@ -21,4 +21,5 @@ The documentation should be expanded at each step of the project to keep track o
 
 # Todos
 
-* Brainstorm all possible approaches to the problem
+* ~~Brainstorm all possible approaches to the problem~~
+* Prepare initial test data
