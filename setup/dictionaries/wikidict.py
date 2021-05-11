@@ -9,7 +9,24 @@ except:
     print("Failed to connect to the database.")
 
 # Opening a cursor that performs database operations
-db_cur = db.cursor()
+cur = db.cursor()
+
+try:
+    cur.execute("""CREATE TABLE IF NOT EXISTS dicts.wikidict(
+        id int not null primary key,
+        term varchar(255) not null,
+        definition text
+        );""")
+except:
+    print("Failed to create table wikidict.")
 
 
 
+# Open a file and iterate over it
+# with open("wikidict.txt", 'r') as index_file:
+#     for line in index_file:
+
+
+db.commit()
+db.close()
+cur.close()
