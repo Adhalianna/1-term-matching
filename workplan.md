@@ -23,4 +23,5 @@ The documentation should be expanded at each step of the project to keep track o
 
 * ~~Brainstorm all possible approaches to the problem~~
 * Prepare initial test data
-* \[Optional] Move project to Docker. Current scripts are most likely protable between Linux and MacOS but Postgres could be setup by  Docker.
+* \[Optional refactoring] Skip creating user on the OS and make scripts parametarized with database name, user name and password.
+* \[Optional] Move project to Docker. 
