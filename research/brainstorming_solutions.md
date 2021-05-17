@@ -11,7 +11,7 @@ studied.
   dictionary](https://www.postgresql.org/docs/9.1/textsearch-dictionaries.html).
 * Study [this all](https://www.postgresql.org/docs/9.5/textsearch.html) to have
   a better understanding of full-text search possibilities of PostgreSQL.
-  ## The bad ideas
+## The bad ideas
 
 Those are to be reconsidered when there are no more good ideas to be implemented
 and still too few solutions are inspected. 

@@ -13,20 +13,30 @@ cur = db.cursor()
 
 try:
     cur.execute("""CREATE TABLE IF NOT EXISTS dicts.wikidict(
-        id int not null primary key,
+        id serial primary key,
         term varchar(255) not null,
         definition text
         );""")
 except:
     print("Failed to create table wikidict.")
 
-
-
-# Open a file and iterate over it
-# with open("wikidict.txt", 'r') as index_file:
-#     for line in index_file:
-
-
 db.commit()
+
+wikipedia.set_lang("en")
+# Open a file and iterate over it 
+with open("wikidict.txt", 'r') as index_file:
+    total_lines = sum(1 for _ in index_file)
+    print("There are " + str(total_lines) + " lines total.")
+with open("wikidict.txt", 'r') as index_file:
+    count = 0
+    for line in index_file:
+        term = line.partition("(")[0].strip().lower()
+        entry = (term, wikipedia.summary(line))
+        cur.execute("""INSERT INTO dicts.wikidict(term, definition)
+        VALUES(%s, %s)""", entry)
+        count+=1
+        print("inserting term '" + term + "', (" + str(count) + "/" + str(total_lines) + ").")
+db.commit()
+
 db.close()
 cur.close()
