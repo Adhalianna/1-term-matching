@@ -8,7 +8,7 @@ studied.
 * Use Postgres _tsquery_ and _tsvector_  like in the tutorial
   [here](https://compose.com/articles/mastering-postgresql-tools-full-text-search-and-phrase-search/).
 * Try and change the dictionary that will be used into a [Postgresql
-  dictionary](https://www.postgresql.org/docs/9.1/textsearch-dictionaries.html).
+  dictionary](https://www.postgresql.org/docs/9.1/textsearch-dictionaries.html). An example of working wit a dictionary created by a user can be found on [stackoverflow](https://stackoverflow.com/questions/46687065/can-postgresqls-to-tsvector-function-return-tokens-words-and-not-lexemes)
 * Study [this all](https://www.postgresql.org/docs/9.5/textsearch.html) to have
   a better understanding of full-text search possibilities of PostgreSQL.
 ## The bad ideas
