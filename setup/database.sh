@@ -19,6 +19,13 @@ case $input in
         ;;
 esac
 
+# NOTE:
+# In case of Manjaro, after downloading all postgres packages to install the server run:
+# sudo su postgres -l
+# initdb --locale $LANG -E UTF8 -D '/var/lib/postgres/data/'
+# exit
+# sudo systemctl start postgresql
+# sudo systemctl enable postgresql
 
 # Creating a new user: term_matcher
 adduser --help &> /dev/null
