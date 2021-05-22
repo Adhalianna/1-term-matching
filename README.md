@@ -27,3 +27,12 @@ Provide a fuzzy match to deal with inflection.
 # Project realization
 
 The project started with research on possible solutions. A summary of that reasearch is located in the [brainstorming_solutions](research/brainstorming_solutions.md) file.
+
+---
+
+## Python dependencies
+
+* Python 3
+* wikipedia
+* psycopg2
+* pdftotext - depends on poppler
