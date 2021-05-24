@@ -6,4 +6,5 @@ CREATE TABLE IF NOT EXISTS docs(
     id serial primary key,
     title varchar(255), --optional field
     document text not null,
+    ts_tokens tsvector
 );
