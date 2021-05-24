@@ -40,7 +40,7 @@ cur = db.cursor()
 # Insert
 try:
     text_to_insert = (text,)
-    cur.execute("INSERT INTO docs(document) VALUES(%s)", text_to_insert)
+    cur.execute("INSERT INTO docs(document, ts_tokens) VALUES(%s, to_tsvector(%s))", (text_to_insert,text_to_insert))
     db.commit()
 except:
     print("Failed to insert the text into the database.")
