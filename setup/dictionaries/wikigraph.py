@@ -5,7 +5,6 @@ import psycopg2  #https://wiki.postgresql.org/wiki/Psycopg2_Tutorial
 import sys
 
 
-# This is also supposed to clear cache (?)
 wikipedia.set_lang("en")
 
 try:
@@ -30,7 +29,10 @@ already_calculated = 0
 for i in range(depth):
     print("Current depth " + str(i) + ".")
     for j in pages[already_calculated:]:
-        new_pages = wikipedia.page(j, auto_suggest=False).links
+        try:
+            new_pages = wikipedia.page(j, auto_suggest=False).links
+        except wikipedia.exceptions.DisambiguationError:
+            new_pages = wikipedia.page(wikipedia.search(j, results=1), auto_suggest=False).links
         already_calculated += len(new_pages)
         pages.extend(new_pages)
 
@@ -63,12 +65,19 @@ db.commit()
 
 # Inserting into the database
 for item in pages:
-    definition =  wikipedia.summary(wikipedia.search(item, results=1), auto_suggest=False)
+    try:
+        definition =  wikipedia.summary(item, auto_suggest=False)
+    except wikipedia.exceptions.WikipediaException:
+        try:
+            definition =  wikipedia.summary(wikipedia.search(item.partition("(")[0], results=1)[0], auto_suggest=False)
+        except wikipedia.exceptions.DisambiguationError:
+            definition =  wikipedia.summary(wikipedia.search(item, results=1)[0], auto_suggest=False)
     term = item.partition("(")[0].strip().lower()
     entry = (term, definition)
     cur.execute("""INSERT INTO dicts.wikigraph(term, definition)
     VALUES(%s, %s)""", entry)
-    print(entry)
+    print(str(term) + "...")
+    #print(entry)
 
 # Do not commit before all inserts are completed
 db.commit()
