@@ -9,6 +9,7 @@ with all the possibilities present in the database.
 
 All the following queries are naive solutions that check for every word in the
 dictionary if it is present in the documents.
+
 ### Queries using ILIKE
 
 Inflections insensitive search based on pattern matching:
@@ -38,15 +39,15 @@ SELECT
     dicts.wikigraph.term, 
     left(dicts.wikigraph.definition, 300)
 FROM dicts.wikigraph, docs
-WHERE docs.document SIMILAR TO concat('%', left(dicts.wikigraph.term, -2), '[abcdefghijklmnoprstquwxyzv]{0,3} %');
+WHERE docs.document SIMILAR TO concat('%', left(dicts.wikigraph.term, -2), '[[:alpha:]]{0,5} %');
 ```
 
 ```sql
 SELECT count(dicts.wikigraph.term)
 FROM dicts.wikigraph, docs
-WHERE docs.document SIMILAR TO concat('%', left(dicts.wikigraph.term, -2), '[abcdefghijklmnoprstquwxyzv]{0,3} %');
+WHERE docs.document SIMILAR TO concat('%', left(dicts.wikigraph.term, -2), '[[:alpha:]]{0,5} %');
 ```
-The number of returned matches is suspsciously high (150, while methods that
+The number of returned matches is suspsciously high (167, while methods that
 seem to promise most accuracy return ~87)
 
 ### POSIX regular expressions
@@ -82,6 +83,14 @@ work however for phrases and it will not detect them.
 SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\q"]*[[:space:]]+|\.)') tokens
 INTO TEMPORARY words
 FROM docs;
+```
+
+```sql
+SELECT 
+    dicts.wikigraph.term, 
+    left(dicts.wikigraph.definition, 300)
+FROM dicst.wikigraph, words
+WHERE words.tokens = 
 ```
 
 ## PostgreSQL full text search functionalities
@@ -165,4 +174,3 @@ CREATE TEXT SEARCH DICTIONARY wikigraph_dict(
     Dictionary = pg_catalog.english_stem
 )
 ``` -->
-
