@@ -36,3 +36,4 @@ The project started with research on possible solutions. A summary of that rease
 * wikipedia
 * psycopg2
 * pdftotext - depends on poppler
+* nltk 
