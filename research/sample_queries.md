@@ -4,6 +4,86 @@ The following are example queries that can be ran on the database. They are not
 designed with benchmarking in mind, rather they serve as a way of familariazing
 with all the possibilities present in the database.
 
+
+## Queries based on ILIKE, SIMILAR TO, and regular expressions
+
+All the following queries are naive solutions that check for every word in the
+dictionary if it is present in the documents.
+### Queries using ILIKE
+
+Inflections insensitive search based on pattern matching:
+
+```sql
+SELECT 
+    dicts.wikigraph.term, 
+    left(dicts.wikigraph.definition, 300)
+FROM dicts.wikigraph, docs
+WHERE docs.document ILIKE concat('%', dicts.wikigraph.term, '%');
+```
+
+```sql
+SELECT count(dicts.wikigraph.term) --just like the previous one but counting
+FROM dicts.wikigraph, docs
+WHERE docs.document ILIKE concat('%', dicts.wikigraph.term, '%');
+```
+
+### Pattern matching with SIMILAR TO
+
+An extremely naive approach, and a one giving incorrect results, to deal with
+inflections would be to trim the endings of the words and allowing anything to
+be attached instead.
+
+```sql
+SELECT 
+    dicts.wikigraph.term, 
+    left(dicts.wikigraph.definition, 300)
+FROM dicts.wikigraph, docs
+WHERE docs.document SIMILAR TO concat('%', left(dicts.wikigraph.term, -2), '[abcdefghijklmnoprstquwxyzv]{0,3} %');
+```
+
+```sql
+SELECT count(dicts.wikigraph.term)
+FROM dicts.wikigraph, docs
+WHERE docs.document SIMILAR TO concat('%', left(dicts.wikigraph.term, -2), '[abcdefghijklmnoprstquwxyzv]{0,3} %');
+```
+The number of returned matches is suspsciously high (150, while methods that
+seem to promise most accuracy return ~87)
+
+### POSIX regular expressions
+
+Unlike `LIKE` or `SIMILAR TO` pattern matching with regex does not require a
+full string (document text in our case) to match but any substring to match
+which might have a great impact on queries performance.
+
+```sql
+SELECT 
+    dicts.wikigraph.term, 
+    left(dicts.wikigraph.definition, 300)
+FROM dicts.wikigraph, docs
+WHERE docs.document ~* dicts.wikigraph.term;
+```
+
+```sql
+SELECT count(dicts.wikigraph.term)
+FROM dicts.wikigraph, docs
+WHERE docs.document ~* dicts.wikigraph.term;
+```
+
+It gives (should give) identical results to the ILIKE example without an attempt
+to deal with inflections.
+
+## Parsing document into tokens
+
+The following creates a temporary table with a single word in each row. It can
+be used later to query each word against the dictionary. This approach will not
+work however for phrases and it will not detect them.
+
+```sql
+SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\q"]*[[:space:]]+|\.)') tokens
+INTO TEMPORARY words
+FROM docs;
+```
+
 ## PostgreSQL full text search functionalities
 This set of queries is based on full text search functionality present in the
 Postgres database. Full text search functions operate on `tsvector` and
@@ -44,6 +124,12 @@ FROM dicts.wikigraph, docs
 WHERE docs.ts_tokens @@ phraseto_tsquery(dicts.wikigraph.term);
 ```
 
+```sql
+SELECT count(dicts.wikigraph.term)
+FROM dicts.wikigraph, docs
+WHERE docs.ts_tokens @@ phraseto_tsquery(dicts.wikigraph.term);
+```
+
 To get the fragments of the document in which the matched terms are present a
 ts_headline function must be used. It does not however use a preprocessed
 tsvector.
@@ -79,8 +165,4 @@ CREATE TEXT SEARCH DICTIONARY wikigraph_dict(
     Dictionary = pg_catalog.english_stem
 )
 ``` -->
-
-## Queries based on LIKE
-
-
 
