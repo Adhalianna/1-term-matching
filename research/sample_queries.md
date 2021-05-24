@@ -60,14 +60,25 @@ the searching in a way **fuzzy**.
 
 ### A Postgres dictionary from the dictionary
 
-```sql
+There are two ways to go about a solution based on making a new Postgres
+dictionary. The simpler and quicker apprach is to simply pass the terms that
+were collected in the dictionary in a file as a new Postgres dictionary. The
+sligthly more complicated approach is to first use a stemming (normalizing)
+dictionary present in the Postgres to parse the collected dictionary before
+outputting them to a file that would become a new Postgres dictionary. The
+latter approach can handle inflections. 
+
+Both of those are however limited and cannot be applied to pharses (made of
+multiple words). An intermediate Postgres dictionary of thesaurus type would be
+needed to first change all the phrases into a single "word" (letter cluster). 
+
+<!-- ```sql
 CREATE TEXT SEARCH DICTIONARY wikigraph_dict(
-    TEMPLATE = thesaurus,
+    TEMPLATE = pg_catalog.simple,
     DictFile = myDict,
     Dictionary = pg_catalog.english_stem
 )
-```
-
+``` -->
 
 ## Queries based on LIKE
 
