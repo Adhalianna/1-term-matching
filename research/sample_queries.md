@@ -80,7 +80,7 @@ be used later to query each word against the dictionary. This approach will not
 work however for phrases and it will not detect them.
 
 ```sql
-SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\q"]*[[:space:]]+|\.)') tokens
+SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens
 INTO TEMPORARY words
 FROM docs;
 ```
