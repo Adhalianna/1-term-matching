@@ -7,9 +7,11 @@ import re
 # Get filename from arguments
 try:
     filename = sys.argv[1]
+    title = sys.argv[2]
 except IndexError:
-    raise SystemExit("""Missing program argument. Pass a name of a pdf file that
-    is to be parsed and uploaded to the database.""")
+    raise SystemExit("""Missing program argument! 
+    First, pass a name of a pdf file that is to be parsed and uploaded to the database. 
+    Second, add a title that will be inserted into the database""")
 
 with open(filename, "rb") as f:
     text = pdftotext.PDF(f)
@@ -40,7 +42,7 @@ cur = db.cursor()
 # Insert
 try:
     text_to_insert = (text,)
-    cur.execute("INSERT INTO docs(document, ts_tokens) VALUES(%s, to_tsvector(%s))", (text_to_insert,text_to_insert))
+    cur.execute("INSERT INTO docs(document, title, ts_tokens) VALUES(%s, %s, to_tsvector(%s))", (text_to_insert, title, text_to_insert))
     db.commit()
 except:
     print("Failed to insert the text into the database.")
