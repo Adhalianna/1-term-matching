@@ -22,6 +22,9 @@ The documentation should be expanded at each step of the project to keep track o
 # Todos
 
 * ~~Brainstorm all possible approaches to the problem~~
-* Prepare initial test data
+* ~~Prepare initial test data~~
+* Remove the pdfs and use an SQL dump instead
+* Complete the postgres dictionary generating approach
+* Add various warnings about the tests based on data set 1 (generating the data takes a day at least... it's still going on)
 * \[Optional refactoring] Skip creating user on the OS and make scripts parametarized with database name, user name and password.
 * \[Optional] Move project to Docker. 
