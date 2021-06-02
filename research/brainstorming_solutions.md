@@ -13,6 +13,8 @@ studied.
   [stackoverflow](https://stackoverflow.com/questions/46687065/can-postgresqls-to-tsvector-function-return-tokens-words-and-not-lexemes)
 * Study [this all](https://www.postgresql.org/docs/9.5/textsearch.html) to have
   a better understanding of full-text search possibilities of PostgreSQL.
+* Add indexes that can work with `tsvector` or `tsquery` as explained [here in
+  the documentation](https://www.postgresql.org/docs/13/textsearch-indexes.html)
 ## The bad ideas
 
 Those are to be reconsidered when there are no more good ideas to be implemented
