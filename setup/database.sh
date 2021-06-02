@@ -77,10 +77,10 @@ fi
 
 
 alias sql="psql -d term_matching_db -U term_matcher -c" #a bit of simplification
-cd setup #move to correct directory
+#cd setup #move to correct directory
 
 # Now, just load the database.sql file
-sql "\ir database.sql"
+sql "\ir setup/database.sql"
 
-cd ..
+#cd ..
 echo "Remember to remove the term_matcher from your users on OS and Postgres when you no longer need it."
