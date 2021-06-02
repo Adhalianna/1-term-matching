@@ -88,9 +88,15 @@ FROM docs;
 ```sql
 SELECT 
     dicts.wikigraph.term, 
-    left(dicts.wikigraph.definition, 300)
-FROM dicst.wikigraph, words
-WHERE words.tokens = 
+    left(dicts.wikigraph.definition, 300) AS definition
+FROM dicts.wikigraph, words
+WHERE words.tokens = dicts.wikigraph.term;
+```
+
+```sql
+SELECT count(words) --count the number of matching words in contrast to number of matched terms
+FROM dicts.wikigraph, words
+WHERE words.tokens = dicts.wikigraph.term;
 ```
 
 ## PostgreSQL full text search functionalities
