@@ -100,13 +100,11 @@ for item in pages:
     entry = (term, term, definition)
     cur.execute(sql.SQL("""INSERT INTO dicts.{} (term, term_query, definition)
     VALUES(%s, phraseto_tsquery(%s), %s)""").format(sql.Identifier(table_name)), entry)
+    db.commit()
     count += 1
     progress = count / total
     if count % 20 == 0:
         print("Entered: "+ str(count) + ", Progress: " + str(round(progress * 100, 2)) + "%.")
-
-# Commit only after all inserts are ready
-db.commit()
 
 db.close()
 cur.close()
