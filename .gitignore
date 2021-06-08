@@ -1,1 +1,4 @@
 .vscode
+benchmarks/*_report*
+setup/dictionaries/term_dict
+setup/dictionaries/thes_dict
