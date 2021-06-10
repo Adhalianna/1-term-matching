@@ -149,6 +149,37 @@ p "---"
 p "TESTS' SET 2 | TEST 2-1 - OTHER QUERIES BASED ON FULL-TEXT SEARCH"
 p "---"
 
+p "Only determine whether there are matches in given text with: small dictionary, short text."
+p "\timing on \\\ " \
+"SELECT docs.ts_tokens @@ to_tsquery( " \
+"array_to_string( " \
+"ARRAY( " \
+"SELECT dicts.wiki_biology_small.term " \
+"FROM dicts.wiki_biology_small " \
+"), " \
+"' | ' " \
+")::text " \
+") AS does_it_contain " \
+"FROM docs " \
+"WHERE docs.title = 'BNW_short';" | psql -d term_matching_db -U term_matcher
+
+p "Only determine whether there are matches in given text with: full dictionary, full text."
+p "\timing on \\\ " \
+"SELECT docs.ts_tokens @@ to_tsquery( " \
+"array_to_string( " \
+"ARRAY( " \
+"SELECT dicts.wiki_biology.term " \
+"FROM dicts.wiki_biology " \
+"), " \
+"' | ' " \
+")::text " \
+") AS does_it_contain " \
+"FROM docs " \
+"WHERE docs.title = 'BNW_full';" | psql -d term_matching_db -U term_matcher
+
+p "Show higlighted matches: small dictionary, short text."
+p "\timing on \\\ " \
+""
 
 p "---"
 p "TESTS OF TESTS' SET 2 COMPLETE"
