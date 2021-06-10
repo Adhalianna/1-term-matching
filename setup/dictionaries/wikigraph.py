@@ -18,7 +18,7 @@ except IndexError:
 if len(sys.argv) > 3:
     table_name = sys.argv[3]
 else:
-    table_name = "wikigraph"
+    table_name = "wiki"
 
 if len(sys.argv) > 4:
     wikipedia.set_lang(sys.argv[4])
@@ -34,7 +34,7 @@ pages.append(start_page[0])
 already_calculated = 0
 
 for i in range(depth):
-    print("Current depth " + str(i) + "...")
+    print("Current depth: " + str(i) + " ...")
     for j in pages[already_calculated:]:
         try:
             new_pages = wikipedia.page(j, auto_suggest=False).links
