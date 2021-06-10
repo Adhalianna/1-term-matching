@@ -2,7 +2,7 @@
 
 The following are example queries that can be ran on the database. They are not
 designed with benchmarking in mind, rather they serve as a way of familariazing
-with all the possibilities present in the database.
+with all the possibilities present in the database. Some examples use outdated schemas.
 
 
 ## Queries based on ILIKE, SIMILAR TO, and regular expressions
