@@ -2,6 +2,7 @@
 import psycopg2  #https://wiki.postgresql.org/wiki/Psycopg2_Tutorial
 from psycopg2 import sql as sql
 import sys
+import re
 
 try:
     action = sys.argv[1]
@@ -19,6 +20,7 @@ try:
     db = psycopg2.connect("dbname=term_matching_db user=term_matcher password=term_matcher")
 except:
     print("Failed to connect to the database.")
+    exit(1)
 
 
 # Opening a cursor that performs database operations
@@ -30,8 +32,10 @@ if action == "generate" or action == "all":
     except IndexError:
         print("As a second argument pass a path to the shared directory used by your Postgres instance to store text search data ($SHAREDIR/tsearch_data)")
         print("For example, in Manjaro's default instaltion of PostgreSQL (2021 here) the path would be: /usr/share/postgresql/tsearch_data")
+        exit(1)
 
 
+    terms = []
     try:
         cur.execute(sql.SQL("SELECT dicts.{name}.term FROM dicts.{name};").format(name=sql.Identifier(table_name)))
         terms = cur.fetchall()
@@ -46,8 +50,13 @@ if action == "generate" or action == "all":
     except PermissionError:
         raise SystemExit("Run the software with permissions necessary to put a new file under the provided path.")
         
-    # terms_dict = open("term_dict", "w") # currently not used!
+    syn_dict = open(path + "/syn_" + table_name + ".syn", "w") # currently not used!
 
+    stop_words = []
+    with open(path + "/english.stop") as fp:
+        lines = fp.readlines()
+        for line in lines:
+            stop_words.append(line.replace('\n', ""))
 
     for term in terms:
         try:
@@ -56,11 +65,13 @@ if action == "generate" or action == "all":
             the_string = ""
         if the_string.isalpha() != True:
             translated_string = the_string.replace(' ', '_')
+            for stpword in stop_words:
+                the_string = re.sub(r"\b" + stpword + r"\b", "?", the_string)
             if the_string != "":
                 thesaurus_dict.write(the_string + " : " + translated_string + "\n")
-            # terms_dict.write(translated_string + "\n")
-        # else:
-            # terms_dict.write(the_string + "\n")
+                syn_dict.write(translated_string + "   " + translated_string +"\n")
+        else:
+            syn_dict.write(the_string + "   " + the_string + "\n")
 
 
 if action == "configure" or action == "all":
@@ -70,6 +81,10 @@ if action == "configure" or action == "all":
             DictFile = {name},
             Dictionary = pg_catalog.english_stem
             );""").format(name=sql.Identifier("thes_" + table_name)))
+        cur.execute(sql.SQL("""CREATE TEXT SEARCH DICTIONARY {name} (
+            TEMPLATE = synonym,
+            SYNONYMS = {name}
+            );""").format(name=sql.Identifier("syn_" + table_name)))
         cur.execute("""CREATE TEXT SEARCH CONFIGURATION dicts_config(
             COPY = pg_catalog.english
             );""")
@@ -78,8 +93,8 @@ if action == "configure" or action == "all":
     try:    
         cur.execute(sql.SQL("""ALTER TEXT SEARCH CONFIGURATION dicts_config 
             ALTER MAPPING FOR asciiword, asciihword, hword_asciipart, word, hword, hword_part
-            WITH {};
-            """).format(sql.Identifier("thes_" + table_name)))
+            WITH {thes}, {syn};
+            """).format(thes=sql.Identifier("thes_" + table_name), syn=sql.Identifier("syn_" + table_name)))
     except:
         print("Error occured")
    
