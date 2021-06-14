@@ -125,7 +125,7 @@ _test_case() {
 
 q1=`echo "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, docs " \
-"WHERE to_tsvector(docs.documet) @@ dicts.DICT.term_query" \
+"WHERE to_tsvector(docs.document) @@ dicts.DICT.term_query" \
 "AND docs.title = 'DOC';"`
 
 _test_case "2-1" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery." "${q1}"
@@ -141,7 +141,7 @@ echo "CREATE INDEX btree_${small_dict}_indx ON dicts.${small_dict} USING GIST (t
 
 q2=`echo "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, docs " \
-"WHERE to_tsvector(docs.documet) @@ dicts.DICT.term_query" \
+"WHERE to_tsvector(docs.document) @@ dicts.DICT.term_query" \
 "AND docs.title = 'DOC';"`
 
 _test_case "2-2" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery. This case uses a GIST index on the tsquery" "${q2}"
@@ -154,7 +154,7 @@ echo "DROP INDEX btree_${small_dict}_indx ON dicts.${small_dict};" | psql -d ter
 
 # TEST 2-3
 
-q3=`echo "SELECT to_tsvector(docs.documet) @@ to_tsquery( " \
+q3=`echo "SELECT to_tsvector(docs.document) @@ to_tsquery( " \
 "array_to_string( " \
 "ARRAY( " \
 "SELECT dicts.DICT.term " \

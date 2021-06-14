@@ -212,5 +212,5 @@ _test_case "1-5" "The text is parsed into separate words which are compared to e
 
 #Dropping the index:
 echo "DROP INDEX hash_${big_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX hash_${medium_dict}_m_indx;" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX hash_${medium_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
 echo "DROP INDEX hash_${small_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
