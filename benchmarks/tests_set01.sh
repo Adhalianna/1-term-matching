@@ -105,8 +105,6 @@ _test_case() {
 
     local query_insertable=$(echo "$query" | tr -s " ")
     local query_insertable=${query_insertable//\'/\'\'}
-    echo $query_insertable
-    sleep 5
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 

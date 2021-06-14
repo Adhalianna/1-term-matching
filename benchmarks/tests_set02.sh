@@ -102,8 +102,6 @@ _test_case() {
 
     local query_insertable=$(echo "$query" | tr -s " ")
     local query_insertable=${query_insertable//\'/\'\'}
-    echo $query_insertable
-    sleep 5
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
@@ -173,7 +171,7 @@ _test_case "2-3" "The whole dictionary is transformed into a single tsquery. It 
 
 # TEST 2-4
 
-q2=`echo "SELECT " \
+q4=`echo "SELECT " \
 "ts_headline(docs.document, phraseto_tsquery(dicts.DICT.term))" \
 "WHERE docs.ts_tokens @@ dicts.DICT.term_query"` \
 "AND docs.title = 'DOC'"
