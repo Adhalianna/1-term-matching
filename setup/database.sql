@@ -5,8 +5,7 @@ GRANT ALL PRIVILEGES ON SCHEMA dicts TO term_matcher;
 ALTER USER term_matcher SET search_path TO dicts, public;
 
 CREATE TABLE docs(
-    id serial primary key,
-    title varchar(255),
+    title varchar(255) primary key,
     document text not null,
     ts_tokens tsvector
 );
@@ -27,7 +26,7 @@ CREATE TABLE tests(
     document_name varchar(63),
     document_words integer not null CHECK (document_words >= 0),
     execution_time interval not null,
-    matches integer not null CHECK (matches >= 0),
+    matches integer not null CHECK (matches >= -1),
     constraint fk_test_case
         foreign key(collection_id) references test_collections(id)
 );
