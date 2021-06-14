@@ -67,8 +67,7 @@ except:
 cur = db.cursor()
 
 try:
-    cur.execute(sql.SQL("DROP TABLE IF EXISTS dicts.{}").format(sql.Identifier(table_name)))
-    cur.execute(sql.SQL("""CREATE TABLE IF NOT EXISTS dicts.{} (
+    cur.execute(sql.SQL("""CREATE TABLE dicts.{} (
         id serial primary key,
         term varchar(255) not null,
         term_query tsquery,
