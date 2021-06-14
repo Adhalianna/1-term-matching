@@ -5,8 +5,7 @@ import sys
 import re
 
 try:
-    action = sys.argv[1]
-    table_name = sys.argv[2]
+    table_name = sys.argv[1]
 except IndexError:
     print("Specify either 'generate', 'configure' or 'all' as the first program parameter.")
     print("'generate' will stop at creating a file that can be used as a thesaurus dictionary.")
@@ -26,52 +25,51 @@ except:
 # Opening a cursor that performs database operations
 cur = db.cursor()
 
-if action == "generate" or action == "all":
-    try:
-        path = sys.argv[3]
-    except IndexError:
-        print("As a second argument pass a path to the shared directory used by your Postgres instance to store text search data ($SHAREDIR/tsearch_data)")
-        print("For example, in Manjaro's default instaltion of PostgreSQL (2021 here) the path would be: /usr/share/postgresql/tsearch_data")
-        exit(1)
+try:
+    path = sys.argv[3]
+except IndexError:
+    print("As a second argument pass a path to the shared directory used by your Postgres instance to store text search data ($SHAREDIR/tsearch_data)")
+    print("For example, in Manjaro's default instaltion of PostgreSQL (2021 here) the path would be: /usr/share/postgresql/tsearch_data")
+    exit(1)
 
 
-    terms = []
+terms = []
+try:
+    cur.execute(sql.SQL("SELECT dicts.{name}.term FROM dicts.{name};").format(name=sql.Identifier(table_name)))
+    terms = cur.fetchall()
+except:
+    print("Failed to fetch terms from a dictionary.")
+
+db.commit()
+
+
+try:
+    thesaurus_dict = open(path + "/thes_" + table_name + ".ths", "w")
+except PermissionError:
+    raise SystemExit("Run the software with permissions necessary to put a new file under the provided path.")
+    
+syn_dict = open(path + "/syn_" + table_name + ".syn", "w") # currently not used!
+
+stop_words = []
+with open(path + "/english.stop") as fp:
+    lines = fp.readlines()
+    for line in lines:
+        stop_words.append(line.replace('\n', ""))
+
+for term in terms:
     try:
-        cur.execute(sql.SQL("SELECT dicts.{name}.term FROM dicts.{name};").format(name=sql.Identifier(table_name)))
-        terms = cur.fetchall()
+        the_string = term[0].strip("'")
     except:
-        print("Failed to fetch terms from a dictionary.")
-
-    db.commit()
-
-
-    try:
-        thesaurus_dict = open(path + "/thes_" + table_name + ".ths", "w")
-    except PermissionError:
-        raise SystemExit("Run the software with permissions necessary to put a new file under the provided path.")
-        
-    syn_dict = open(path + "/syn_" + table_name + ".syn", "w") # currently not used!
-
-    stop_words = []
-    with open(path + "/english.stop") as fp:
-        lines = fp.readlines()
-        for line in lines:
-            stop_words.append(line.replace('\n', ""))
-
-    for term in terms:
-        try:
-            the_string = term[0].strip("'")
-        except:
-            the_string = ""
-        if the_string.isalpha() != True:
-            translated_string = the_string.replace(' ', '_')
-            for stpword in stop_words:
-                the_string = re.sub(r"\b" + stpword + r"\b", "?", the_string)
-            if the_string != "":
-                thesaurus_dict.write(the_string + " : " + translated_string + "\n")
-                syn_dict.write(translated_string + "   " + translated_string +"\n")
-        else:
-            syn_dict.write(the_string + "   " + the_string + "\n")
+        the_string = ""
+    if the_string.isalpha() != True:
+        translated_string = the_string.replace(' ', '_')
+        for stpword in stop_words:
+            the_string = re.sub(r"\b" + stpword + r"\b", "?", the_string)
+        if the_string != "":
+            thesaurus_dict.write(the_string + " : " + translated_string + "\n")
+            syn_dict.write(translated_string + "   " + translated_string +"\n")
+    else:
+        syn_dict.write(the_string + "   " + the_string + "\n")
 
 
 cur.close()
