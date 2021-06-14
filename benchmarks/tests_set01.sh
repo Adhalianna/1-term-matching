@@ -84,11 +84,12 @@ _test() {
     local results=$(echo "\timing on \\\ ${query}" | psql -d term_matching_db -U term_matcher)
 
     local count=$(grep -Eo "[0-9]*" <<< $results | head -n 1)
-    local time=$(grep -m 1 -Eo "[0-9]*[,\.][0-9]* ms (.*)" <<< $results)
+    local time=$(grep -Eo "[0-9]*[,\.][0-9]* ms" <<< $results | tail -n 1)
     
     echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"
 
-    local formatted_time=$(echo "$time" | grep -m 1 -Eo "[0-9]*" | head -n 1)
+    local formatted_time=$(grep -m 1 -Eo "[0-9]*.[0-9]*" <<< $time)
+    local formatted_time=$(echo $formatted_time | awk '{print int($1)}')
     local formatted_time="$formatted_time millisecond"
     if [ $uses_count = true ] ; then
         echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', $count);" | psql -d term_matching_db -U term_matcher
@@ -135,18 +136,22 @@ _test_case "1-1" "The text is searched for term matches using a query based on I
 
 #---------------------------------------------------------------
 
-# TEST 1-2
+# TEST CANCELLED, ERRORS AT REGEX PATTERN MADE FROM DICT TERM
 
-q2=`echo "SELECT count(dicts.DICT.id) " \
-"FROM dicts.DICT, docs " \
-"WHERE docs.document ~* dicts.DICT.term" \
-"AND docs.title = 'DOC';"`
+# # TEST 1-2
 
-_test_case "1-2" "The text is searched for term matches using a query based on regex." "${q2}"
+# q2=`echo "SELECT count(dicts.DICT.id) " \
+# "FROM dicts.DICT, docs " \
+# "WHERE docs.document ~* dicts.DICT.term" \
+# "AND docs.title = 'DOC';"`
+
+# _test_case "1-2" "The text is searched for term matches using a query based on regex." "${q2}"
 
 #---------------------------------------------------------------
 
 # TEST 1-3
+
+echo "DROP TABLE words;" | psql -d term_matching_db -U term_matcher -q
 
 q3=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
 "INTO TEMPORARY words " \
@@ -166,6 +171,8 @@ _test_case "1-3" "The text is parsed into separate words which are compared to e
 echo "CREATE INDEX btree_${big_dict}_indx ON dicts.${big_dict} USING btree (term) WITH (fillfactor = 100);" | psql -d term_matching_db -U term_matcher -q
 echo "CREATE INDEX btree_${medium_dict}_indx ON dicts.${medium_dict} USING btree (term) WITH (fillfactor = 100);" | psql -d term_matching_db -U term_matcher -q
 echo "CREATE INDEX btree_${small_dict}_indx ON dicts.${small_dict} USING btree (term) WITH (fillfactor = 100);" | psql -d term_matching_db -U term_matcher -q
+
+echo "DROP TABLE IF EXISTS words;" | psql -d term_matching_db -U term_matcher -q
 
 q4=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
 "INTO TEMPORARY words " \
@@ -190,6 +197,8 @@ echo "DROP INDEX btree_${small_dict}_indx;" | psql -d term_matching_db -U term_m
 echo "CREATE INDEX hash_${big_dict}_indx ON dicts.${big_dict} USING hash (term);" | psql -d term_matching_db -U term_matcher -q
 echo "CREATE INDEX hash_${medium_dict}_indx ON dicts.${medium_dict} USING hash (term);" | psql -d term_matching_db -U term_matcher -q
 echo "CREATE INDEX hash_${small_dict}_indx ON dicts.${small_dict} USING hash (term);" | psql -d term_matching_db -U term_matcher -q
+
+echo "DROP TABLE words;" | psql -d term_matching_db -U term_matcher -q
 
 q5=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
 "INTO TEMPORARY words " \

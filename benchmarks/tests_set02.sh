@@ -81,11 +81,12 @@ _test() {
     local results=$(echo "\timing on \\\ ${query}" | psql -d term_matching_db -U term_matcher)
 
     local count=$(grep -Eo "[0-9]*" <<< $results | head -n 1)
-    local time=$(grep -m 1 -Eo "[0-9]*[,\.][0-9]* ms (.*)" <<< $results)
+    local time=$(grep -Eo "[0-9]*[,\.][0-9]* ms" <<< $results | tail -n 1)
     
     echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"
 
-    local formatted_time=$(echo "$time" | grep -m 1 -Eo "[0-9]*" | head -n 1)
+    local formatted_time=$(grep -m 1 -Eo "[0-9]*.[0-9]*" <<< $time)
+    local formatted_time=$(echo $formatted_time | awk '{print int($1)}')
     local formatted_time="$formatted_time millisecond"
     if [ $uses_count = true ] ; then
         echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', $count);" | psql -d term_matching_db -U term_matcher
