@@ -1,9 +1,6 @@
 #!/bin/sh
 
-echo "The script will now create a database in postgres and add a new user to your system that will be used to"\
-" access the database. To achieve so 'sudo' will be invoked a couple of times. It is assumed that Postgres is"\
-" already installed on the system. If the behaviour of the script seems suspicious or you wish to perform those"\
-" steps manually choose 'No' right now, then open the script in a text editor and investigate on your own."
+echo "NULLLLLLLLL"
 read -r -p "Do you wish to proceed? [Y/n]" input
 
 # Do you?
@@ -26,28 +23,6 @@ esac
 # exit
 # sudo systemctl start postgresql
 # sudo systemctl enable postgresql
-
-# Creating a new user: term_matcher
-adduser --help &> /dev/null
-exitcode=$?
-if [ $exitcode -ne 0 ]; then
-    echo "Command 'adduser' not found, using 'useradd'"
-    sudo useradd term_matcher -M -p term_matcher
-else
-    sudo adduser term_matcher -M -p term_matcher
-fi
-exitcode=$?
-case $exitcode in
-    0)
-        echo "Successfully created a user 'term_matcher' with a password 'term_matcher'"
-        ;;
-    9)
-        ;;
-    *)
-        echo "Failed to create a user. Quitting."
-        exit 1
-        ;;
-esac
 
 
 # Creating a database in Postgres
