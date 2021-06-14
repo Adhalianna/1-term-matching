@@ -64,6 +64,7 @@ _test() {
     local query=$3 
     local dict=$4
     local doc=$5
+    local uses_count=$6
 
     local test_name="$1-$2"
     local entries=${stats[$dict]}
@@ -78,14 +79,18 @@ _test() {
 
     local formatted_time=$(echo "$time" | grep -m 1 -Eo "[0-9]*" | head -n 1)
     local formatted_time="$formatted_time millisecond"
-    echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', $count);" | psql -d term_matching_db -U term_matcher
-    
+    if [ $uses_count = true ] ; then
+        echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', $count);" | psql -d term_matching_db -U term_matcher
+    else
+        echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', -1);" | psql -d term_matching_db -U term_matcher
+    fi
 }
 
 _test_case() {
     local collection_name=$1
     local description=$2
     local query=$3
+    local uses_count=${4:-true}
 
     local query_insertable=$(echo "$query" | tr -s " ")
     local query_insertable=${query_insertable//\'/\'\'}
@@ -102,7 +107,7 @@ _test_case() {
             local doc=$j
             local test_query=${query//DICT/$dict}
             local test_query=${test_query//DOC/$doc}
-            _test "$collection_name" "$counter" "$test_query" "$dict" "$doc"
+            _test "$collection_name" "$counter" "$test_query" "$dict" "$doc" "$uses_count"
         done
     done
 }

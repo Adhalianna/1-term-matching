@@ -1,186 +1,182 @@
 #!/bin/bash
 
-alias p="echo"
+small_dict="wiki_biology_small"
+medium_dict="wiki_biology_medium"
+big_dict="wiki_biology"
 
-p "The second tests' set uses postgres full-text search capabilities."
-p "It requires data set 1."
-p "Each test query of part 1 will count the number of matches found."
-p "The second part of the set will perform extra queries that return something more than a count of results"
-p "The time of execution will be measured by Postgres."
+dictionaries=("$small_dict" "$medium_dict" "$big_dict")
 
 
-p "---"
-p "TESTS' SET 2 | TEST 0 - DATA STATISTICS"
-p "---"
+short_text="BNW_short"
+full_text="BNW_full"
 
-p "The number of entries in the small dictionary:"
-p "SELECT count(id) FROM dicts.wiki_biology_small;" | psql -d term_matching_db -U term_matcher
+documents=("$short_text" "$full_text")
 
-p "The number of entries in the medium dictionary:"
-p "SELECT count(id) FROM dicts.wiki_biology_medium;" | psql -d term_matching_db -U term_matcher
+#---------------------------------------------------------------
 
-p "The number of entries in the full dictionary:"
-p "SELECT count(id) FROM dicts.wiki_biology;" | psql -d term_matching_db -U term_matcher
+echo "The second tests' set uses postgres full-text search capabilities."
+echo "It requires data set 1."
+echo "Each test query of part 1 will count the number of matches found."
+echo "The second part of the set will perform extra queries that return something more than a count of results"
+echo "The time of execution will be measured by Postgres."
 
-p "The number of words on first 20 pages of \"Brave New World\""
-p "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
-"INTO TEMPORARY words " \
-"FROM docs " \
-"WHERE docs.title = 'BNW_short';" \
-" " \
-"SELECT count(*) " \
-"FROM words;" | psql -d term_matching_db -U term_matcher
+#---------------------------------------------------------------
 
-p "The number of words in a copy of \"Brave New World\":"
-p "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
-"INTO TEMPORARY words " \
-"FROM docs " \
-"WHERE docs.title = 'BNW_full';" \
-" " \
-"SELECT count(*) " \
-"FROM words;" | psql -d term_matching_db -U term_matcher
+declare -A stats
 
+#this part somewhat violates "do not repeat yourself" rule... 
+small_dict_entries=`echo "SELECT count(id) FROM dicts.$small_dict" \
+    | psql -d term_matching_db -U term_matcher \
+    | grep -m 1 -Eo '[0-9]{1,9}'`
+stats[$small_dict]="$small_dict_entries"
 
+medium_dict_entries=`echo "SELECT count(id) FROM dicts.$medium_dict" \
+    | psql -d term_matching_db -U term_matcher \
+    | grep -m 1 -Eo '[0-9]{1,9}'`
+stats[$medium_dict]="$medium_dict_entries"
 
-p "---"
-p "TESTS' SET 2 | TEST 1-1 - TSQUERY FROM A DICTIONARY"
-p "---"
+big_dict_entries=`echo "SELECT count(id) FROM dicts.$big_dict" \
+    | psql -d term_matching_db -U term_matcher \
+    | grep -m 1 -Eo '[0-9]{1,9}'`
+stats[$big_dict]="$big_dict_entries"
 
-p "Small dictionary, short text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology_small.id) " \
-"FROM dicts.wiki_biology_small, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology_small.term_query" \
-"AND docs.title = 'BNW_short';" | psql -d term_matching_db -U term_matcher
+short_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+    "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
+    "INTO TEMPORARY words " \
+    "FROM docs " \
+    "WHERE docs.title = '$short_text'; " \
+    "SELECT count(*) " \
+    "FROM words;" \
+    | psql -d term_matching_db -U term_matcher \
+    | grep -m 2 -Eo '[0-9]{1,9}' \
+    | tail -n 1`
+stats[$short_text]="$short_text_words"
 
-p "Small dictionary, full text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology_small.id) " \
-"FROM dicts.wiki_biology_small, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology_small.term_query" \
-"AND docs.title = 'BNW_full';" | psql -d term_matching_db -U term_matcher
+full_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+    "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
+    "INTO TEMPORARY words " \
+    "FROM docs " \
+    "WHERE docs.title = '$full_text'; " \
+    "SELECT count(*) " \
+    "FROM words;" \
+    | psql -d term_matching_db -U term_matcher \
+    | grep -m 2 -Eo '[0-9]{1,9}' \
+    | tail -n 1`
+stats[$full_text]="$full_text_words"
 
-p "Medium dictionary, short text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology_medium.id) " \
-"FROM dicts.wiki_biology_medium, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology_medium.term_query" \
-"AND docs.title = 'BNW_short';" | psql -d term_matching_db -U term_matcher
+#---------------------------------------------------------------
 
-p "Medium dictionary, full text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology_medium.id) " \
-"FROM dicts.wiki_biology_medium, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology_medium.term_query" \
-"AND docs.title = 'BNW_full';" | psql -d term_matching_db -U term_matcher
+_test() {
+    local test_collection=$1
+    local test_number=$2
+    local query=$3 
+    local dict=$4
+    local doc=$5
+    local uses_count=$6
 
-p "Full dictionary, short text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology.id) " \
-"FROM dicts.wiki_biology, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology.term_query" \
-"AND docs.title = 'BNW_short';" | psql -d term_matching_db -U term_matcher
+    local test_name="$1-$2"
+    local entries=${stats[$dict]}
+    local words=${stats[$doc]}
 
-p "Full dictionary, full text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology.id) " \
-"FROM dicts.wiki_biology, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology.term_query" \
-"AND docs.title = 'BNW_full';" | psql -d term_matching_db -U term_matcher
+    local results=$(echo "\timing on \\\ ${query}" | psql -d term_matching_db -U term_matcher)
 
-p "---"
-p "TESTS' SET 2 | TEST 1-2 - TSQUERY FROM A DICTIONARY WITH AN INDEX"
-p "---"
+    local count=$(grep -Eo "[0-9]*" <<< $results | head -n 1)
+    local time=$(grep -m 1 -Eo "[0-9]*[,\.][0-9]* ms (.*)" <<< $results)
+    
+    echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"
 
-#Creating the index
-p "CREATE INDEX btree_wiki_biology_indx ON dicts.wiki_biology USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
-p "CREATE INDEX btree_wiki_biology_m_indx ON dicts.wiki_biology_medium USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
-p "CREATE INDEX btree_wiki_biology_s_indx ON dicts.wiki_biology_small USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
+    local formatted_time=$(echo "$time" | grep -m 1 -Eo "[0-9]*" | head -n 1)
+    local formatted_time="$formatted_time millisecond"
+    if [ $uses_count = true ] ; then
+        echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', $count);" | psql -d term_matching_db -U term_matcher
+    else
+        echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', -1);" | psql -d term_matching_db -U term_matcher
+    fi
+}
 
-p "Small dictionary, short text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology_small.id) " \
-"FROM dicts.wiki_biology_small, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology_small.term_query" \
-"AND docs.title = 'BNW_short';" | psql -d term_matching_db -U term_matcher
+_test_case() {
+    local collection_name=$1
+    local description=$2
+    local query=$3
+    local uses_count=${4:-true}
 
-p "Small dictionary, full text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology_small.id) " \
-"FROM dicts.wiki_biology_small, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology_small.term_query" \
-"AND docs.title = 'BNW_full';" | psql -d term_matching_db -U term_matcher
-
-p "Medium dictionary, short text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology_medium.id) " \
-"FROM dicts.wiki_biology_medium, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology_medium.term_query" \
-"AND docs.title = 'BNW_short';" | psql -d term_matching_db -U term_matcher
-
-p "Medium dictionary, full text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology_medium.id) " \
-"FROM dicts.wiki_biology_medium, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology_medium.term_query" \
-"AND docs.title = 'BNW_full';" | psql -d term_matching_db -U term_matcher
-
-p "Full dictionary, short text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology.id) " \
-"FROM dicts.wiki_biology, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology.term_query" \
-"AND docs.title = 'BNW_short';" | psql -d term_matching_db -U term_matcher
-
-p "Full dictionary, full text:"
-p "\timing on \\\ " \
-"SELECT count(dicts.wiki_biology.id) " \
-"FROM dicts.wiki_biology, docs " \
-"WHERE docs.ts_tokens @@ dicts.wiki_biology.term_query" \
-"AND docs.title = 'BNW_full';" | psql -d term_matching_db -U term_matcher
-
-#Dropping the index
-p "DROP INDEX btree_wiki_biology_indx ON dicts.wiki_biology;" | psql -d term_matching_db -U term_matcher -q
-p "DROP INDEX btree_wiki_biology_m_indx ON dicts.wiki_biology_medium;" | psql -d term_matching_db -U term_matcher -q
-p "DROP INDEX btree_wiki_biology_s_indx ON dicts.wiki_biology_small;" | psql -d term_matching_db -U term_matcher -q
+    local query_insertable=$(echo "$query" | tr -s " ")
+    local query_insertable=${query_insertable//\'/\'\'}
+    echo $query_insertable
+    sleep 5
+    echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
-p "---"
-p "TESTS' SET 2 | TEST 2-1 - OTHER QUERIES BASED ON FULL-TEXT SEARCH"
-p "---"
+    counter="0"
+    for i in "${dictionaries[@]}"; do
+        for j in "${documents[@]}"; do
+            counter=$((counter + 1))
+            local dict=$i
+            local doc=$j
+            local test_query=${query//DICT/$dict}
+            local test_query=${test_query//DOC/$doc}
+            _test "$collection_name" "$counter" "$test_query" "$dict" "$doc" "$uses_count"
+        done
+    done
+}
 
-p "Only determine whether there are matches in given text with: small dictionary, short text."
-p "\timing on \\\ " \
-"SELECT docs.ts_tokens @@ to_tsquery( " \
+#---------------------------------------------------------------
+
+# TEST 2-1
+
+q1=`echo "SELECT count(dicts.DICT.id) " \
+"FROM dicts.DICT, docs " \
+"WHERE docs.ts_tokens @@ dicts.DICT.term_query" \
+"AND docs.title = 'DOC';"`
+
+_test_case "2-1" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery." "${q1}"
+
+#---------------------------------------------------------------
+
+# TEST 2-2
+
+#Creating the index:
+echo "CREATE INDEX btree_${big_dict}_indx ON dicts.${big_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
+echo "CREATE INDEX btree_${medium_dict}_indx ON dicts.${medium_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
+echo "CREATE INDEX btree_${small_dict}_indx ON dicts.${small_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
+
+q2=`echo "SELECT count(dicts.DICT.id) " \
+"FROM dicts.DICT, docs " \
+"WHERE docs.ts_tokens @@ dicts.DICT.term_query" \
+"AND docs.title = 'DOC';"`
+
+_test_case "2-2" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery. This case uses a GIST index on the tsquery" "${q2}"
+
+echo "DROP INDEX btree_${big_dict}_indx ON dicts.${big_dict};" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX btree_${medium_dict}_m_indx ON dicts.${medium_dict};" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX btree_${small_dict}_indx ON dicts.${small_dict};" | psql -d term_matching_db -U term_matcher -q
+
+#---------------------------------------------------------------
+
+# TEST 2-3
+
+q3=`echo "SELECT docs.ts_tokens @@ to_tsquery( " \
 "array_to_string( " \
 "ARRAY( " \
-"SELECT dicts.wiki_biology_small.term " \
-"FROM dicts.wiki_biology_small " \
+"SELECT dicts.DICT.term " \
+"FROM dicts.DICT " \
 "), " \
 "' | ' " \
 ")::text " \
 ") AS does_it_contain " \
 "FROM docs " \
-"WHERE docs.title = 'BNW_short';" | psql -d term_matching_db -U term_matcher
+"WHERE docs.title = 'DOC';"`
 
-p "Only determine whether there are matches in given text with: full dictionary, full text."
-p "\timing on \\\ " \
-"SELECT docs.ts_tokens @@ to_tsquery( " \
-"array_to_string( " \
-"ARRAY( " \
-"SELECT dicts.wiki_biology.term " \
-"FROM dicts.wiki_biology " \
-"), " \
-"' | ' " \
-")::text " \
-") AS does_it_contain " \
-"FROM docs " \
-"WHERE docs.title = 'BNW_full';" | psql -d term_matching_db -U term_matcher
+_test_case "2-3" "The whole dictionary is transformed into a single tsquery. It tells only whether there are any matches" "${q3}" "false"
 
-p "Show higlighted matches: small dictionary, short text."
-p "\timing on \\\ " \
-""
+#---------------------------------------------------------------
 
-p "---"
-p "TESTS OF TESTS' SET 2 COMPLETE"
-p "---"
+# TEST 2-4
+
+q2=`echo "SELECT " \
+"ts_headline(docs.document, phraseto_tsquery(dicts.DICT.term))" \
+"WHERE docs.ts_tokens @@ dicts.DICT.term_query"` \
+"AND docs.title = 'DOC'"
+
+_test_case "2-4" "A Postgres function ts_headline is used to show matches inside the text. Terms are used as previously prepared queries." "${q4}" "false"
+
