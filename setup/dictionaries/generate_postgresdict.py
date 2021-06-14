@@ -26,7 +26,7 @@ except:
 cur = db.cursor()
 
 try:
-    path = sys.argv[3]
+    path = sys.argv[2]
 except IndexError:
     print("As a second argument pass a path to the shared directory used by your Postgres instance to store text search data ($SHAREDIR/tsearch_data)")
     print("For example, in Manjaro's default instaltion of PostgreSQL (2021 here) the path would be: /usr/share/postgresql/tsearch_data")
