@@ -30,3 +30,5 @@ CREATE TABLE tests(
     constraint fk_test_case
         foreign key(collection_id) references test_collections(id)
 );
+
+CREATE EXTENSION fuzzystrmatch;
