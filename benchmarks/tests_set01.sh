@@ -154,8 +154,7 @@ q3=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[
 "WHERE docs.title = 'DOC'; " \
 "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, words " \
-"WHERE words.tokens = dicts.DICT.term" \
-"AND docs.title = 'DOC';"`
+"WHERE words.tokens = dicts.DICT.term"`
 
 _test_case "1-3" "The text is parsed into separate words which are compared to each term." "${q3}"
 
@@ -174,8 +173,7 @@ q4=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[
 "WHERE docs.title = 'DOC'; " \
 "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, words " \
-"WHERE words.tokens = dicts.DICT.term" \
-"AND docs.title = 'DOC';"`
+"WHERE words.tokens = dicts.DICT.term"`
 
 _test_case "1-4" "The text is parsed into separate words which are compared to each term. There is a btree index on dictionary." "${q4}"
 
@@ -199,8 +197,7 @@ q5=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[
 "WHERE docs.title = 'DOC'; " \
 "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, words " \
-"WHERE words.tokens = dicts.DICT.term" \
-"AND docs.title = 'DOC';"`
+"WHERE words.tokens = dicts.DICT.term"`
 
 _test_case "1-5" "The text is parsed into separate words which are compared to each term. There is a hash index on dictionary." "${q5}"
 
