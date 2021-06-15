@@ -68,10 +68,10 @@ Currently there are two working scripts that generate dictionary or text and one
 
 ## Python dependencies
 
-Please use either `pip install` or acquire them from other repositories. The [initialize.sh](initialize.sh) script will run `pip install`.
+Please use either `pip install` or acquire them from other repositories. The [initialize.sh](initialize.sh) script will run `pip install` which should do nothing when the dependency is available.
 
 * Python 3
 * wikipedia
 * psycopg2
 * pdftotext - depends on poppler
-* nltk 
+* nltk - not used in the current version

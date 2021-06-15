@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS avg_per;
 SELECT collection_id, 
     avg(execution_time) AS average_execution_on_big_data 
 FROM tests
-WHERE (document_name = 'Relativity' OR document_name = 'BNW_full') 
+WHERE document_name = 'BNW_full'
 AND dict_name = 'wiki_biology'
 AND matches != -1
 GROUP BY collection_id

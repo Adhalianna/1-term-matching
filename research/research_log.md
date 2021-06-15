@@ -17,5 +17,6 @@
 * Added a script that parsed pdf to plain text that could be inserted into database.
 * A lot of time was spent on polishing the script that genereted dictionaries using Wikipedia API. First tests on dictionaries created this way with entries around 2000, 20000 seemed to give unreliable results (execution time less than 2s). Because of that many attempts were done achieve a much bigger dictionary (7000 entries). The script would crash for multiple reasons mid exuction. To collect around 7000 entries the script was running whole day. Most common reason of a crash was lost internet connection. However, later it turned out that some queries perform much worse than expected (80 minutes) and much worse than what was considered to be a naive solution. Nevertheless, a resourceful machine (16 threads, 32GB RAM) was discovered to be a nuisance in some cases.
 * Started creating tests (benchmarks) which after a while had to be refactored to be able to write them faster and collect results inside the database.
+* One of test cases based on regex had to be excluded because of parsing problems (see [loose_notes](loose_notes.md))
 * Expanded knowledge about PostgreSQL and SQL greatly.
 * During testing found some interesting results in the net about a _fuzzystrmatch_ module for Postgres. Added new tests using the module.
