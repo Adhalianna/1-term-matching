@@ -93,7 +93,7 @@ _test() {
 
     local results=$(echo "\timing on \\\ ${query}" | psql -d term_matching_db -U term_matcher)
 
-    local count=$(grep -Eo "[0-9]*[,\.]?[0-9]*" <<< $results | tail -n 4 | head -n 1)
+    local count=$(grep -Eo "\s[[:digit:]]+$" <<< $results | tail -n 1)
     local time=$(grep -Eo "[0-9]*[,\.][0-9]* ms" <<< $results | tail -n 1)
     
     echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"

@@ -97,7 +97,7 @@ _test() {
 
     local results=$(echo "\timing on \\\ ${query}" | psql -d term_matching_db -U term_matcher)
 
-    local count=$(grep -Eo "[0-9]*" <<< $results | tail -n 4 | head -n 1)
+    local count=$(grep -Eo "\s[[:digit:]]+$" <<< $results | tail -n 1)
     local time=$(grep -Eo "[0-9]*[,\.][0-9]* ms" <<< $results | tail -n 1)
     
     echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"
@@ -138,13 +138,13 @@ _test_case() {
 
 #---------------------------------------------------------------
 
-# TEST 3-1
+# # TEST 3-1
 
-q1=`echo "SELECT to_tsvector('dicts_config', docs.document) " \
-"FROM docs " \
-"WHERE docs.title = 'DOC';"`
+# q1=`echo "SELECT to_tsvector('dicts_config', docs.document) " \
+# "FROM docs " \
+# "WHERE docs.title = 'DOC';"`
 
-_test_case "3-1" "Generates a tsvector using a modified  text-search dictionary." "${q1}"
+# _test_case "3-1" "Generates a tsvector using a modified  text-search dictionary." "${q1}"
 
 
 #---------------------------------------------------------------
