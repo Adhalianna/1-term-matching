@@ -1,3 +1,20 @@
+# Working with the data 
+
+First, if during benchmarking any test was interrupted or crashed it most likely left an entry in `tests` with a zero execution time. To clear the data from such artifacts simply run:
+
+```sql
+DELETE FROM tests WHERE execution_time = interval '0 milliseconds';
+```
+
+The complete set of collected statistics includes:
+* Number of words in the text and number of entries in the dictionary
+* Number of matches (-1 in case of queries that returned different kind of information)
+* Names of used dictionaries and texts
+* Test and test collection id which can be used to refer to the used query and its description
+* A timestamp
+
+For example, 
+
 # The fastest
 
 The toughest tests were the ones that used a dictionary with around 70 000 entries and a text containg a whole book (Huxley's "Brave New World"). This exam showed some disappointments and some clear winners:
@@ -22,10 +39,10 @@ ORDER BY average_execution_on_big_data;
 
 # The most reliable
 
-First peeking at the results of the queries and comparing them next to each other
+Below is a list of queries that represent different strategies of acquiring the matches.
 
 ```sql
---1 (tests 1-1)
+--Query number 1 (tests 1-1)
 SELECT dicts.wiki_biology.term
 FROM dicts.wiki_biology, docs
 WHERE docs.document
@@ -33,7 +50,7 @@ ILIKE concat('%', dicts.wiki_biology.term, '%')
 AND docs.title = 'BNW_short'
 LIMIT 20;
 
---2 (tests 1-3 / 1-4 / 1-5)
+--Query number 2 (tests 1-3 / 1-4 / 1-5)
 SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens
 INTO TEMPORARY words
 FROM docs
@@ -43,28 +60,28 @@ FROM dicts.wiki_biology, words
 WHERE words.tokens = dicts.wiki_biology.term
 LIMIT 20;
 
---3 (tests 2-1 / 2-2)
+--Query number 3 (tests 2-1 / 2-2)
 SELECT dicts.wiki_biology.term
 FROM dicts.wiki_biology, docs
 WHERE to_tsvector(docs.document) @@ dicts.wiki_biology.term_query
 AND docs.title = 'BNW_short'
 LIMIT 20;
 
---4 (tests 3-2 / 3-3 / 3-4)
+--Query number 4 (tests 3-2 / 3-3 / 3-4)
 SELECT dicts.wiki_biology.term
 FROM dicts.wiki_biology, docs
 WHERE to_tsvector('dicts_config', docs.document) @@ dicts.wiki_biology.term_query
 AND docs.title = 'BNW_short'
 LIMIT 20;
 
---5 (tests 4-1 / 4-2)
+--Query number 5 (tests 4-1 / 4-2)
 SELECT dicts.wiki_biology.term
 FROM dicts.wiki_biology, words
 WHERE levenshtein(words.tokens, dicts.wiki_biology.term) <= 1
 LIMIT 20;
 ```
 
-```sql
+<!-- ```sql
 --this in not how an actual queries result look like (the resu)
 
       1     |     2     |         3          |         4         |  5   |  
@@ -99,7 +116,7 @@ When we compare the results with e.g. 5000 first characters of the used document
 * Query number 2 seems more reliable than the query number 5
 * Word "epsilon" is a guarnteed match
 * Words returned by query 1 have much higher ids than the words returned by query 3 suggesting that the query number 3 successfully matched what number 1 could not match.
-* Phrase "double-slit experiment" does not appear in the book.
+* Phrase "double-slit experiment" does not appear in the book. -->
 
 
 
