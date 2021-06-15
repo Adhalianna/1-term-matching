@@ -45,8 +45,8 @@ echo "CREATE TABLE dicts.wiki_biology_small AS" \
 ./setup/texts/parse_pdf.py setup/texts/Brave_New_World_short.pdf BNW_short
 
 # Create new dictionaries to be used internally by Postgres
-./setup/dictionaries/generate_postgresdict.py wiki_biology "$(pg_config --sharedir)/tsearch_data"
-./setup/dictionaries/generate_postgresdict.py wiki_biology_medium "$(pg_config --sharedir)/tsearch_data"
-./setup/dictionaries/generate_postgresdict.py wiki_biology_small "$(pg_config --sharedir)/tsearch_data"
+sudo ./setup/dictionaries/generate_postgresdict.py wiki_biology "$(pg_config --sharedir)/tsearch_data"
+sudo ./setup/dictionaries/generate_postgresdict.py wiki_biology_medium "$(pg_config --sharedir)/tsearch_data"
+sudo ./setup/dictionaries/generate_postgresdict.py wiki_biology_small "$(pg_config --sharedir)/tsearch_data"
 
 
