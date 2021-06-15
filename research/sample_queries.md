@@ -94,10 +94,32 @@ WHERE words.tokens = dicts.wikigraph.term;
 ```
 
 ```sql
-SELECT count(words) --count the number of matching words in contrast to number of matched terms
+SELECT count(tokens) --count the number of matching words in contrast to number of matched terms
 FROM dicts.wikigraph, words
 WHERE words.tokens = dicts.wikigraph.term;
 ```
+
+## Postgres fuzzystrmatch module
+
+Postgres has a built-in module features a selection of fuzzy string matching algorithms. To enable run:
+
+```sql
+CREATE EXTENSION fuzzystrmatch;
+```
+
+### Match allowing a certain levenshtein distance
+
+First partition the text into words, then...
+
+```sql
+SELECT count(dicts.wikigraph.id) 
+FROM dicts.wikigraph, words
+WHERE levenshtein(words.tokens, dicts.wikigraph.term) <= 1;
+```
+
+### Fuzzy match basing on allowed levenshtein distance
+
+
 
 ## PostgreSQL full text search functionalities
 This set of queries is based on full text search functionality present in the
