@@ -50,6 +50,18 @@ INNER JOIN avg_per ON avg_per.collection_id = test_collections.id
 ORDER BY @ corr_time_entries ASC
 LIMIT 1;
 
+SELECT collection_id, dict_name, document_name, avg(matches / dict_entries ) AS avg_matches_per_entry, avg(matches / document_words) AS avg_matches_per_word
+FROM tests
+GROUP BY (collection_id, dict_entries, document_words)
+ORDER BY collection_id;
+
+SELECT collection_id, avg_matches_per_entry, avg_matches_per_word, query
+FROM (
+    SELECT collection_id, avg(matches / dict_entries ) AS avg_matches_per_entry, avg(matches / document_words) AS avg_matches_per_word
+    FROM tests
+    GROUP BY collection_id
+    ) AS foo INNER JOIN test_collections ON foo.collection_id = test_collections.id
+ORDER BY collection_id;
 
 
 
