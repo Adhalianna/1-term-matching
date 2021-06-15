@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "NULLLLLLLLL"
+echo "The initialization script will create a new Postgres database and a new user. It requires sudoers rights to be able to act as a postgres user on the system."
 read -r -p "Do you wish to proceed? [Y/n]" input
 
 # Do you?
