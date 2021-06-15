@@ -18,7 +18,6 @@ esac
 echo "DROP TABLE IF EXISTS dicts.wiki_biology;" | psql -d term_matching_db -U term_matcher -q
 echo "DROP TABLE IF EXISTS dicts.wiki_biology_medium;" | psql -d term_matching_db -U term_matcher -q
 echo "DROP TABLE IF EXISTS dicts.wiki_biology_small;" | psql -d term_matching_db -U term_matcher -q
-echo "TRUNCATE TABLE docs;" | psql -d term_matching_db -U term_matcher -q
 
 # Create the base (full, big) dictionary 
 ./setup/dictionaries/wikigraph.py Biology 5 wiki_biology en
