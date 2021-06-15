@@ -30,6 +30,7 @@ The documentation should be expanded at each step of the project to keep track o
 * Complete [research log](research/research_log.md)
 * Create dictionaries using wordnet
 * Refactor the first two sections of each tests' set/collection into something more universal and easier to edit (but before check loose_notes.md)
+* Run tests with smaller dictionaries (70000 records take too much time with text-search functions)
 * \[Optional] fix test scripts so that statistics collection does not violate the "do not repeat yourself" rule.
 * \[Optional refactoring] Skip creating user on the OS and make scripts parametarized with database name, user name and password.
 * \[Optional] Move project to Docker. 
