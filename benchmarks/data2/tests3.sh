@@ -1,16 +1,24 @@
 #!/bin/bash
 
-small_dict="wiki_biology_small"
-medium_dict="wiki_biology_medium"
-big_dict="wiki_biology"
+small_dict="wiki_cogn_small"
+medium_dict="wiki_cogn_medium"
+big_dict="wiki_cogn"
 
 dictionaries=("$small_dict" "$medium_dict" "$big_dict")
 
 
-short_text="BNW_short"
-full_text="BNW_full"
+short_text="Relativity_0"
+medium_text="Relativity_1"
+long_text="Relativity_2"
 
-documents=("$short_text" "$full_text")
+documents=("$short_text" "$medium_text" "$long_text")
+
+#---------------------------------------------------------------
+
+echo "The third test collection uses postgres full-text search capabilities but with a modifed text search configuration."
+echo "Fist part of the queries will count the number of matches found."
+echo "The second part of the set will perform extra queries that return something else than a count of results"
+echo "The time of execution will be measured by Postgres."
 
 #---------------------------------------------------------------
 
@@ -44,17 +52,30 @@ short_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     | tail -n 1`
 stats[$short_text]="$short_text_words"
 
-full_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+medium_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
     "INTO TEMPORARY words " \
     "FROM docs " \
-    "WHERE docs.title = '$full_text'; " \
+    "WHERE docs.title = '$medium_text'; " \
     "SELECT count(*) " \
     "FROM words;" \
     | psql -d term_matching_db -U term_matcher \
     | grep -m 2 -Eo '[0-9]{1,9}' \
     | tail -n 1`
-stats[$full_text]="$full_text_words"
+stats[$medium_text]="$medium_text_words"
+
+long_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+    "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
+    "INTO TEMPORARY words " \
+    "FROM docs " \
+    "WHERE docs.title = '$long_text'; " \
+    "SELECT count(*) " \
+    "FROM words;" \
+    | psql -d term_matching_db -U term_matcher \
+    | grep -m 2 -Eo '[0-9]{1,9}' \
+    | tail -n 1`
+stats[$long_text]="$long_text_words"
+
 
 #---------------------------------------------------------------
 
@@ -77,7 +98,7 @@ _test() {
 
     local results=$(echo "\timing on \\\ ${query}" | psql -d term_matching_db -U term_matcher)
 
-    local count=$(grep -Eo "[0-9]*" <<< $results | head -n 1)
+    local count=$(grep -Eo "[0-9]*" <<< $results | tail -n 4 | head -n 1)
     local time=$(grep -Eo "[0-9]*[,\.][0-9]* ms" <<< $results | tail -n 1)
     
     echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"
@@ -103,7 +124,7 @@ _test_case() {
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
-    counter="0"
+    counter="9"
     for i in "${dictionaries[@]}"; do
         for j in "${documents[@]}"; do
             counter=$((counter + 1))
@@ -149,14 +170,14 @@ echo "CREATE INDEX gist_${small_dict}_indx ON dicts.${small_dict} USING GIST (te
 
 q3=`echo "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, docs " \
-"WHERE to_tsvector('dicts_config', docs.document) @@ dicts.DICT.term_query" \
+"WHERE to_tsvector('dicts_config', docs.document) @@ dicts.DICT.term_query " \
 "AND docs.title = 'DOC';"`
 
 _test_case "3-3" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery. This case uses a GIST index on the tsquery. Text search functions use a previously prepared text-search dictionary." "${q3}"
 
-echo "DROP INDEX gist_${big_dict}_indx ON dicts.${big_dict};" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX gist_${medium_dict}_m_indx ON dicts.${medium_dict};" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX gist_${small_dict}_indx ON dicts.${small_dict};" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${big_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${medium_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${small_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
 
 #---------------------------------------------------------------
 

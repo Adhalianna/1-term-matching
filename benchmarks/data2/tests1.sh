@@ -1,22 +1,21 @@
 #!/bin/bash
 
 
-small_dict="wiki_biology_small"
-medium_dict="wiki_biology_medium"
-big_dict="wiki_biology"
+small_dict="wiki_cogn_small"
+medium_dict="wiki_cogn_medium"
+big_dict="wiki_cogn"
 
 dictionaries=("$small_dict" "$medium_dict" "$big_dict")
 
+short_text="Relativity_0"
+medium_text="Relativity_1"
+long_text="Relativity_2"
 
-short_text="BNW_short"
-full_text="BNW_full"
-
-documents=("$short_text" "$full_text")
+documents=("$short_text" "$medium_text" "$long_text")
 
 #---------------------------------------------------------------
 
-echo "The first tests' set is based on ILIKE, regular expressions and simple string equality operators."
-echo "It requires data set 1."
+echo "The first test collection is based on ILIKE, regular expressions and simple string equality operators."
 echo "The first part of tests will perform queries on each term existing in a dictionary."
 echo "The second one will use different approach and query each word in a document."
 echo "Those queries will be repeated after creating indexes on the dictionaries."
@@ -55,17 +54,30 @@ short_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     | tail -n 1`
 stats[$short_text]="$short_text_words"
 
-full_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+medium_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
     "INTO TEMPORARY words " \
     "FROM docs " \
-    "WHERE docs.title = '$full_text'; " \
+    "WHERE docs.title = '$medium_text'; " \
     "SELECT count(*) " \
     "FROM words;" \
     | psql -d term_matching_db -U term_matcher \
     | grep -m 2 -Eo '[0-9]{1,9}' \
     | tail -n 1`
-stats[$full_text]="$full_text_words"
+stats[$medium_text]="$medium_text_words"
+
+long_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+    "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
+    "INTO TEMPORARY words " \
+    "FROM docs " \
+    "WHERE docs.title = '$long_text'; " \
+    "SELECT count(*) " \
+    "FROM words;" \
+    | psql -d term_matching_db -U term_matcher \
+    | grep -m 2 -Eo '[0-9]{1,9}' \
+    | tail -n 1`
+stats[$long_text]="$long_text_words"
+
 
 #---------------------------------------------------------------
 
@@ -83,7 +95,7 @@ _test() {
 
     local results=$(echo "\timing on \\\ ${query}" | psql -d term_matching_db -U term_matcher)
 
-    local count=$(grep -Eo "[0-9]*" <<< $results | head -n 1)
+    local count=$(grep -Eo "[0-9]*" <<< $results | tail -n 4 | head -n 1)
     local time=$(grep -Eo "[0-9]*[,\.][0-9]* ms" <<< $results | tail -n 1)
     
     echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"
@@ -109,7 +121,7 @@ _test_case() {
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
-    counter="0"
+    counter="9"
     for i in "${dictionaries[@]}"; do
         for j in "${documents[@]}"; do
             counter=$((counter + 1))

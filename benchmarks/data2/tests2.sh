@@ -7,11 +7,18 @@ big_dict="wiki_cogn"
 dictionaries=("$small_dict" "$medium_dict" "$big_dict")
 
 
-short_text="BNW_short"
-long_text1="BNW_full"
-long_text2="Relativity"
+short_text="Relativity_0"
+medium_text="Relativity_1"
+long_text="Relativity_2"
 
-documents=("$short_text" "$long_text1" "$long_text2")
+documents=("$short_text" "$medium_text" "$long_text")
+
+#---------------------------------------------------------------
+
+echo "The second test collection uses postgres full-text search capabilities."
+echo "Fist part of the queries will count the number of matches found."
+echo "The second part of the set will perform extra queries that return something else than a count of results"
+echo "The time of execution will be measured by Postgres."
 
 #---------------------------------------------------------------
 
@@ -45,29 +52,29 @@ short_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     | tail -n 1`
 stats[$short_text]="$short_text_words"
 
-long_text1_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+medium_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
     "INTO TEMPORARY words " \
     "FROM docs " \
-    "WHERE docs.title = '$long_text1'; " \
+    "WHERE docs.title = '$medium_text'; " \
     "SELECT count(*) " \
     "FROM words;" \
     | psql -d term_matching_db -U term_matcher \
     | grep -m 2 -Eo '[0-9]{1,9}' \
     | tail -n 1`
-stats[$long_text1]="$long_text1_words"
+stats[$medium_text]="$medium_text_words"
 
-long_text2_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+long_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
     "INTO TEMPORARY words " \
     "FROM docs " \
-    "WHERE docs.title = '$long_text2'; " \
+    "WHERE docs.title = '$long_text'; " \
     "SELECT count(*) " \
     "FROM words;" \
     | psql -d term_matching_db -U term_matcher \
     | grep -m 2 -Eo '[0-9]{1,9}' \
     | tail -n 1`
-stats[$long_text2]="$long_text2_words"
+stats[$long_text]="$long_text_words"
 
 
 #---------------------------------------------------------------
@@ -84,14 +91,9 @@ _test() {
     local entries=${stats[$dict]}
     local words=${stats[$doc]}
 
-    # NOTE: Check loose_notes.md!
-    ./setup/dictionaries/configure_dicts.sh $dict "dicts_config"
-    echo "UPDATE $dict SET term_query = phraseto_tsquery('dicts_config', term);" | psql -d term_matching_db -U term_matcher -q
-    # NOTE: Check loose_notes.md!
-
     local results=$(echo "\timing on \\\ ${query}" | psql -d term_matching_db -U term_matcher)
 
-    local count=$(grep -Eo "[0-9]*" <<< $results | head -n 1)
+    local count=$(grep -Eo "[0-9]*" <<< $results | tail -n 4 | head -n 1)
     local time=$(grep -Eo "[0-9]*[,\.][0-9]* ms" <<< $results | tail -n 1)
     
     echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"
@@ -117,7 +119,7 @@ _test_case() {
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
-    counter="0"
+    counter="9"
     for i in "${dictionaries[@]}"; do
         for j in "${documents[@]}"; do
             counter=$((counter + 1))
@@ -132,51 +134,40 @@ _test_case() {
 
 #---------------------------------------------------------------
 
-# TEST 3-1
+# TEST 2-1
 
-q1=`echo "SELECT to_tsvector('dicts_config', docs.document) " \
-"FROM docs " \
-"WHERE docs.title = 'DOC';"`
-
-_test_case "3-1" "Generates a tsvector using a modified  text-search dictionary." "${q1}"
-
-
-#---------------------------------------------------------------
-
-# TEST 3-2
-
-q2=`echo "SELECT count(dicts.DICT.id) " \
+q1=`echo "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, docs " \
-"WHERE to_tsvector('dicts_config', docs.document) @@ dicts.DICT.term_query" \
+"WHERE to_tsvector(docs.document) @@ dicts.DICT.term_query" \
 "AND docs.title = 'DOC';"`
 
-_test_case "3-2" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery. Text search functions use a previously prepared text-search dictionary." "${q2}"
+_test_case "2-1" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery." "${q1}"
 
 #---------------------------------------------------------------
 
-# TEST 3-3
+# TEST 2-2
 
 #Creating the index:
 echo "CREATE INDEX gist_${big_dict}_indx ON dicts.${big_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
 echo "CREATE INDEX gist_${medium_dict}_indx ON dicts.${medium_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
 echo "CREATE INDEX gist_${small_dict}_indx ON dicts.${small_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
 
-q3=`echo "SELECT count(dicts.DICT.id) " \
+q2=`echo "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, docs " \
-"WHERE to_tsvector('dicts_config', docs.document) @@ dicts.DICT.term_query " \
+"WHERE to_tsvector(docs.document) @@ dicts.DICT.term_query" \
 "AND docs.title = 'DOC';"`
 
-_test_case "3-3" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery. This case uses a GIST index on the tsquery. Text search functions use a previously prepared text-search dictionary." "${q3}"
+_test_case "2-2" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery. This case uses a GIST index on the tsquery" "${q2}"
 
-echo "DROP INDEX gist_${big_dict}_indx ON dicts.${big_dict};" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX gist_${medium_dict}_m_indx ON dicts.${medium_dict};" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX gist_${small_dict}_indx ON dicts.${small_dict};" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${big_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${medium_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${small_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
 
 #---------------------------------------------------------------
 
-# TEST 3-4
+# TEST 2-3
 
-q4=`echo "SELECT to_tsvector('dicts_config', docs.document) @@ to_tsquery('dicts_config', " \
+q3=`echo "SELECT to_tsvector(docs.document) @@ to_tsquery( " \
 "array_to_string( " \
 "ARRAY( " \
 "SELECT dicts.DICT.term " \
@@ -188,15 +179,16 @@ q4=`echo "SELECT to_tsvector('dicts_config', docs.document) @@ to_tsquery('dicts
 "FROM docs " \
 "WHERE docs.title = 'DOC';"`
 
-_test_case "3-4" "The whole dictionary is transformed into a single tsquery. It tells only whether there are any matches. Text search functions use a previously prepared text-search dictionary." "${q4}" "false"
+_test_case "2-3" "The whole dictionary is transformed into a single tsquery. It tells only whether there are any matches" "${q3}" "false"
 
 #---------------------------------------------------------------
 
-# TEST 3-5
+# TEST 2-4
 
-q5=`echo "SELECT " \
-"ts_headline(docs.document, phraseto_tsquery('dicts_config', dicts.DICT.term))" \
+q4=`echo "SELECT " \
+"ts_headline(docs.document, phraseto_tsquery(dicts.DICT.term))" \
 "WHERE docs.ts_tokens @@ dicts.DICT.term_query"` \
 "AND docs.title = 'DOC'"
 
-_test_case "3-5" "A Postgres function ts_headline is used to show matches inside the text. Terms are used as previously prepared queries. Text search functions use a previously prepared text-search dictionary." "${q5}" "false"
+_test_case "2-4" "A Postgres function ts_headline is used to show matches inside the text. Terms are used as previously prepared queries." "${q4}" "false"
+

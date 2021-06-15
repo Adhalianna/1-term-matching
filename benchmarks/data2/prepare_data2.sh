@@ -1,12 +1,14 @@
 #!/bin/bash
 
-read -r -p "Are you sure you want to run the script? It will drop previously created dictionaries. [Y/n]" input
+read -r -p "Do you wish to drop previously created for the data set dictionaries? [Y/n]" input
 
 case $input in
     [yY][eE][sS]|[yY])
+        echo "DROP TABLE IF EXISTS dicts.wiki_cogn;" | psql -d term_matching_db -U term_matcher -q
+        echo "DROP TABLE IF EXISTS dicts.wiki_cogn_medium;" | psql -d term_matching_db -U term_matcher -q
+        echo "DROP TABLE IF EXISTS dicts.wiki_cogn_small;" | psql -d term_matching_db -U term_matcher -q
         ;;
     [nN][oO]|[nN])
-        exit
         ;;
     *)
         echo "Invalid input..."
@@ -14,10 +16,7 @@ case $input in
         ;;
 esac
 
-# Clear-up at start
-echo "DROP TABLE IF EXISTS dicts.wiki_cogn;" | psql -d term_matching_db -U term_matcher -q
-echo "DROP TABLE IF EXISTS dicts.wiki_cogn_medium;" | psql -d term_matching_db -U term_matcher -q
-echo "DROP TABLE IF EXISTS dicts.wiki_cogn_small;" | psql -d term_matching_db -U term_matcher -q
+
 
 # Create the base (full, big) dictionary 
 ./setup/dictionaries/wikigraph.py "Embodied cognition" 1 wiki_cogn en
@@ -40,7 +39,7 @@ echo "CREATE TABLE dicts.wiki_cogn_small AS" \
 
 
 # Import texts
-./setup/texts/parse_pdf.py setup/texts/Einstein_Relativity.pdf Relativity
+./setup/texts/parse_pdf.py setup/texts/Einstein_Relativity.pdf Relativity 3
 
 # Create new dictionaries to be used internally by Postgres
 sudo ./setup/dictionaries/generate_postgresdict.py wiki_cogn "$(pg_config --sharedir)/tsearch_data"

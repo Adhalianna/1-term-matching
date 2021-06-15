@@ -7,20 +7,19 @@ big_dict="wiki_cogn"
 
 dictionaries=("$small_dict" "$medium_dict" "$big_dict")
 
-short_text="BNW_short"
-long_text1="BNW_full"
-long_text2="Relativity"
 
-documents=("$short_text" "$long_text1" "$long_text2")
+short_text="Relativity_0"
+medium_text="Relativity_1"
+long_text="Relativity_2"
+
+documents=("$short_text" "$medium_text" "$long_text")
 
 #---------------------------------------------------------------
 
-echo "The first tests' set is based on ILIKE, regular expressions and simple string equality operators."
-echo "It requires data set 1."
-echo "The first part of tests will perform queries on each term existing in a dictionary."
-echo "The second one will use different approach and query each word in a document."
-echo "Those queries will be repeated after creating indexes on the dictionaries."
-echo "Each test query will count the number of matches found."
+echo "The last test collection utilizes a levenshtein distance from a fuzzystrmatch module"
+echo "It issues two queries."
+echo "They should return exactly the same number of matches."
+echo "The second query uses a better optimized version of the levenshtein() function."
 echo "The time of execution will be measured by Postgres."
 
 #---------------------------------------------------------------
@@ -55,29 +54,30 @@ short_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     | tail -n 1`
 stats[$short_text]="$short_text_words"
 
-long_text1_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+medium_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
     "INTO TEMPORARY words " \
     "FROM docs " \
-    "WHERE docs.title = '$long_text1'; " \
+    "WHERE docs.title = '$medium_text'; " \
     "SELECT count(*) " \
     "FROM words;" \
     | psql -d term_matching_db -U term_matcher \
     | grep -m 2 -Eo '[0-9]{1,9}' \
     | tail -n 1`
-stats[$long_text1]="$long_text1_words"
+stats[$medium_text]="$medium_text_words"
 
-long_text2_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+long_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
     "INTO TEMPORARY words " \
     "FROM docs " \
-    "WHERE docs.title = '$long_text2'; " \
+    "WHERE docs.title = '$long_text'; " \
     "SELECT count(*) " \
     "FROM words;" \
     | psql -d term_matching_db -U term_matcher \
     | grep -m 2 -Eo '[0-9]{1,9}' \
     | tail -n 1`
-stats[$long_text2]="$long_text2_words"
+stats[$long_text]="$long_text_words"
+
 
 #---------------------------------------------------------------
 
@@ -95,7 +95,7 @@ _test() {
 
     local results=$(echo "\timing on \\\ ${query}" | psql -d term_matching_db -U term_matcher)
 
-    local count=$(grep -Eo "[0-9]*" <<< $results | head -n 1)
+    local count=$(grep -Eo "[0-9]*" <<< $results | tail -n 4 | head -n 1)
     local time=$(grep -Eo "[0-9]*[,\.][0-9]* ms" <<< $results | tail -n 1)
     
     echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"
@@ -121,7 +121,7 @@ _test_case() {
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
-    counter="0"
+    counter="9"
     for i in "${dictionaries[@]}"; do
         for j in "${documents[@]}"; do
             counter=$((counter + 1))
@@ -136,93 +136,32 @@ _test_case() {
 
 #---------------------------------------------------------------
 
-# TEST 1-1
-
-q1=`echo "SELECT count(dicts.DICT.id) " \
-"FROM dicts.DICT, docs " \
-"WHERE docs.document " \
-"ILIKE concat('%', dicts.DICT.term, '%') " \
-"AND docs.title = 'DOC';"`
-
-_test_case "1-1" "The text is searched for term matches using a query based on ILIKE." "${q1}"
-
-#---------------------------------------------------------------
-
-# TEST CANCELLED, ERRORS AT REGEX PATTERN MADE FROM DICT TERM
-
-# # TEST 1-2
-
-# q2=`echo "SELECT count(dicts.DICT.id) " \
-# "FROM dicts.DICT, docs " \
-# "WHERE docs.document ~* dicts.DICT.term" \
-# "AND docs.title = 'DOC';"`
-
-# _test_case "1-2" "The text is searched for term matches using a query based on regex." "${q2}"
-
-#---------------------------------------------------------------
-
-# TEST 1-3
-
-echo "DROP TABLE words;" | psql -d term_matching_db -U term_matcher -q
-
-q3=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
-"INTO TEMPORARY words " \
-"FROM docs " \
-"WHERE docs.title = 'DOC'; " \
-"SELECT count(dicts.DICT.id) " \
-"FROM dicts.DICT, words " \
-"WHERE words.tokens = dicts.DICT.term"`
-
-_test_case "1-3" "The text is parsed into separate words which are compared to each term." "${q3}"
-
-#---------------------------------------------------------------
-
-# TEST 1-4
-
-#Creating the index:
-echo "CREATE INDEX btree_${big_dict}_indx ON dicts.${big_dict} USING btree (term) WITH (fillfactor = 100);" | psql -d term_matching_db -U term_matcher -q
-echo "CREATE INDEX btree_${medium_dict}_indx ON dicts.${medium_dict} USING btree (term) WITH (fillfactor = 100);" | psql -d term_matching_db -U term_matcher -q
-echo "CREATE INDEX btree_${small_dict}_indx ON dicts.${small_dict} USING btree (term) WITH (fillfactor = 100);" | psql -d term_matching_db -U term_matcher -q
+# TEST 4-1
 
 echo "DROP TABLE IF EXISTS words;" | psql -d term_matching_db -U term_matcher -q
 
-q4=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
+q1=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
 "INTO TEMPORARY words " \
 "FROM docs " \
 "WHERE docs.title = 'DOC'; " \
 "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, words " \
-"WHERE words.tokens = dicts.DICT.term"`
+"WHERE levenshtein(words.tokens,dicts.DICT.term) <= 1;"`
 
-_test_case "1-4" "The text is parsed into separate words which are compared to each term. There is a btree index on dictionary." "${q4}"
-
-#Dropping the index:
-echo "DROP INDEX btree_${big_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX btree_${medium_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX btree_${small_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
+_test_case "4-1" "Compares words from text (parsed into separate table) to dictionary term using leveshtein distance." "${q1}"
 
 #---------------------------------------------------------------
 
-# TEST 1-5
+# TEST 4-2
 
-#Creating the index:
-echo "CREATE INDEX hash_${big_dict}_indx ON dicts.${big_dict} USING hash (term);" | psql -d term_matching_db -U term_matcher -q
-echo "CREATE INDEX hash_${medium_dict}_indx ON dicts.${medium_dict} USING hash (term);" | psql -d term_matching_db -U term_matcher -q
-echo "CREATE INDEX hash_${small_dict}_indx ON dicts.${small_dict} USING hash (term);" | psql -d term_matching_db -U term_matcher -q
+echo "DROP TABLE IF EXISTS words;" | psql -d term_matching_db -U term_matcher -q
 
-echo "DROP TABLE words;" | psql -d term_matching_db -U term_matcher -q
-
-q5=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
+q2=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
 "INTO TEMPORARY words " \
 "FROM docs " \
 "WHERE docs.title = 'DOC'; " \
 "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, words " \
-"WHERE words.tokens = dicts.DICT.term"`
+"WHERE levenshtein_less_equal(words.tokens, dicts.DICT.term, 1) <= 1;"`
 
-_test_case "1-5" "The text is parsed into separate words which are compared to each term. There is a hash index on dictionary." "${q5}"
-
-#Dropping the index:
-echo "DROP INDEX hash_${big_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX hash_${medium_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX hash_${small_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
+_test_case "4-2" "Compares words from text (parsed into separate table) to dictionary term using leveshtein_less_equal function." "${q2}"
