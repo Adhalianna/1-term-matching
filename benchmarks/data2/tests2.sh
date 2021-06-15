@@ -98,14 +98,12 @@ _test() {
     
     echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"
 
-    local 
     local formatted_time=$(grep -m 1 -Eo "[0-9]*.[0-9]*" <<< $time)
     local formatted_time=$(echo $formatted_time | awk '{print int($1)}')
     local formatted_time="$formatted_time millisecond"
     if [ $uses_count = true ] ; then
         echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', $count);" | psql -d term_matching_db -U term_matcher
     else
-        echo $results
         echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', -1);" | psql -d term_matching_db -U term_matcher
     fi
 }
