@@ -1,6 +1,6 @@
 #!/bin/bash
 
-read -r -p "Are you sure you want to run the script? It will drop previously created dictionaries [Y/n]" input
+read -r -p "Are you sure you want to run the script? It will drop previously created dictionaries. [Y/n]" input
 
 case $input in
     [yY][eE][sS]|[yY])
