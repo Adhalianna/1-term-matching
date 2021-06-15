@@ -164,30 +164,30 @@ echo "DROP INDEX gist_${small_dict}_indx;" | psql -d term_matching_db -U term_ma
 
 #---------------------------------------------------------------
 
-# TEST 2-3
+# # TEST 2-3
 
-q3=`echo "SELECT to_tsvector(docs.document) @@ to_tsquery( " \
-"array_to_string( " \
-"ARRAY( " \
-"SELECT dicts.DICT.term " \
-"FROM dicts.DICT " \
-"), " \
-"' | ' " \
-")::text " \
-") AS does_it_contain " \
-"FROM docs " \
-"WHERE docs.title = 'DOC';"`
+# q3=`echo "SELECT to_tsvector(docs.document) @@ to_tsquery( " \
+# "array_to_string( " \
+# "ARRAY( " \
+# "SELECT dicts.DICT.term " \
+# "FROM dicts.DICT " \
+# "), " \
+# "' | ' " \
+# ")::text " \
+# ") AS does_it_contain " \
+# "FROM docs " \
+# "WHERE docs.title = 'DOC';"`
 
-_test_case "2-3" "The whole dictionary is transformed into a single tsquery. It tells only whether there are any matches" "${q3}" "false"
+# _test_case "2-3" "The whole dictionary is transformed into a single tsquery. It tells only whether there are any matches" "${q3}" "false"
 
-#---------------------------------------------------------------
+# #---------------------------------------------------------------
 
-# TEST 2-4
+# # TEST 2-4
 
-q4=`echo "SELECT " \
-"ts_headline(docs.document, phraseto_tsquery(dicts.DICT.term))" \
-"WHERE docs.ts_tokens @@ dicts.DICT.term_query"` \
-"AND docs.title = 'DOC'"
+# q4=`echo "SELECT " \
+# "ts_headline(docs.document, phraseto_tsquery(dicts.DICT.term))" \
+# "WHERE docs.ts_tokens @@ dicts.DICT.term_query"` \
+# "AND docs.title = 'DOC'"
 
-_test_case "2-4" "A Postgres function ts_headline is used to show matches inside the text. Terms are used as previously prepared queries." "${q4}" "false"
+# _test_case "2-4" "A Postgres function ts_headline is used to show matches inside the text. Terms are used as previously prepared queries." "${q4}" "false"
 

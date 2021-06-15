@@ -93,17 +93,19 @@ _test() {
 
     local results=$(echo "\timing on \\\ ${query}" | psql -d term_matching_db -U term_matcher)
 
-    local count=$(grep -Eo "[0-9]*" <<< $results | tail -n 4 | head -n 1)
+    local count=$(grep -Eo "[0-9]*[,\.]?[0-9]*" <<< $results | tail -n 4 | head -n 1)
     local time=$(grep -Eo "[0-9]*[,\.][0-9]* ms" <<< $results | tail -n 1)
     
     echo "[TEST $test_name] $entries dictionary entries ($dict) | $words text words ($doc) | $count matches | $time"
 
+    local 
     local formatted_time=$(grep -m 1 -Eo "[0-9]*.[0-9]*" <<< $time)
     local formatted_time=$(echo $formatted_time | awk '{print int($1)}')
     local formatted_time="$formatted_time millisecond"
     if [ $uses_count = true ] ; then
         echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', $count);" | psql -d term_matching_db -U term_matcher
     else
+        echo $results
         echo "INSERT INTO tests VALUES (DEFAULT, '$test_name', now(), '$test_collection', '$dict', $entries, '$doc', $words, INTERVAL '$formatted_time', -1);" | psql -d term_matching_db -U term_matcher
     fi
 }
@@ -165,30 +167,30 @@ echo "DROP INDEX gist_${small_dict}_indx;" | psql -d term_matching_db -U term_ma
 
 #---------------------------------------------------------------
 
-# TEST 2-3
+# # TEST 2-3
 
-q3=`echo "SELECT to_tsvector(docs.document) @@ to_tsquery( " \
-"array_to_string( " \
-"ARRAY( " \
-"SELECT dicts.DICT.term " \
-"FROM dicts.DICT " \
-"), " \
-"' | ' " \
-")::text " \
-") AS does_it_contain " \
-"FROM docs " \
-"WHERE docs.title = 'DOC';"`
+# q3=`echo "SELECT to_tsvector(docs.document) @@ to_tsquery( " \
+# "array_to_string( " \
+# "ARRAY( " \
+# "SELECT dicts.DICT.term " \
+# "FROM dicts.DICT " \
+# "), " \
+# "' | ' " \
+# ")::text " \
+# ") AS does_it_contain " \
+# "FROM docs " \
+# "WHERE docs.title = 'DOC';"`
 
-_test_case "2-3" "The whole dictionary is transformed into a single tsquery. It tells only whether there are any matches" "${q3}" "false"
+# _test_case "2-3" "The whole dictionary is transformed into a single tsquery. It tells only whether there are any matches" "${q3}" "false"
 
-#---------------------------------------------------------------
+# #---------------------------------------------------------------
 
-# TEST 2-4
+# # TEST 2-4
 
-q4=`echo "SELECT " \
-"ts_headline(docs.document, phraseto_tsquery(dicts.DICT.term))" \
-"WHERE docs.ts_tokens @@ dicts.DICT.term_query"` \
-"AND docs.title = 'DOC'"
+# q4=`echo "SELECT " \
+# "ts_headline(docs.document, phraseto_tsquery(dicts.DICT.term))" \
+# "WHERE docs.ts_tokens @@ dicts.DICT.term_query"` \
+# "AND docs.title = 'DOC'"
 
-_test_case "2-4" "A Postgres function ts_headline is used to show matches inside the text. Terms are used as previously prepared queries." "${q4}" "false"
+# _test_case "2-4" "A Postgres function ts_headline is used to show matches inside the text. Terms are used as previously prepared queries." "${q4}" "false"
 

@@ -181,29 +181,29 @@ echo "DROP INDEX gist_${small_dict}_indx;" | psql -d term_matching_db -U term_ma
 
 #---------------------------------------------------------------
 
-# TEST 3-4
+# # TEST 3-4
 
-q4=`echo "SELECT to_tsvector('dicts_config', docs.document) @@ to_tsquery('dicts_config', " \
-"array_to_string( " \
-"ARRAY( " \
-"SELECT dicts.DICT.term " \
-"FROM dicts.DICT " \
-"), " \
-"' | ' " \
-")::text " \
-") AS does_it_contain " \
-"FROM docs " \
-"WHERE docs.title = 'DOC';"`
+# q4=`echo "SELECT to_tsvector('dicts_config', docs.document) @@ to_tsquery('dicts_config', " \
+# "array_to_string( " \
+# "ARRAY( " \
+# "SELECT dicts.DICT.term " \
+# "FROM dicts.DICT " \
+# "), " \
+# "' | ' " \
+# ")::text " \
+# ") AS does_it_contain " \
+# "FROM docs " \
+# "WHERE docs.title = 'DOC';"`
 
-_test_case "3-4" "The whole dictionary is transformed into a single tsquery. It tells only whether there are any matches. Text search functions use a previously prepared text-search dictionary." "${q4}" "false"
+# _test_case "3-4" "The whole dictionary is transformed into a single tsquery. It tells only whether there are any matches. Text search functions use a previously prepared text-search dictionary." "${q4}" "false"
 
-#---------------------------------------------------------------
+# #---------------------------------------------------------------
 
-# TEST 3-5
+# # TEST 3-5
 
-q5=`echo "SELECT " \
-"ts_headline(docs.document, phraseto_tsquery('dicts_config', dicts.DICT.term))" \
-"WHERE docs.ts_tokens @@ dicts.DICT.term_query"` \
-"AND docs.title = 'DOC'"
+# q5=`echo "SELECT " \
+# "ts_headline(docs.document, phraseto_tsquery('dicts_config', dicts.DICT.term))" \
+# "WHERE docs.ts_tokens @@ dicts.DICT.term_query"` \
+# "AND docs.title = 'DOC'"
 
-_test_case "3-5" "A Postgres function ts_headline is used to show matches inside the text. Terms are used as previously prepared queries. Text search functions use a previously prepared text-search dictionary." "${q5}" "false"
+# _test_case "3-5" "A Postgres function ts_headline is used to show matches inside the text. Terms are used as previously prepared queries. Text search functions use a previously prepared text-search dictionary." "${q5}" "false"
