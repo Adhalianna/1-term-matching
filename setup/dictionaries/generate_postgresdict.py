@@ -7,10 +7,7 @@ import re
 try:
     table_name = sys.argv[1]
 except IndexError:
-    print("Specify either 'generate', 'configure' or 'all' as the first program parameter.")
-    print("'generate' will stop at creating a file that can be used as a thesaurus dictionary.")
-    print("'configure' will create or switch the text search configuration used by the database to use the generated thesaurus dictionary.")
-    print("Next specify a name of the table from which you wish to generate the dictionary.")
+    print("Specify a name of the table from which you wish to generate the dictionary.")
     exit(1)
 
 
