@@ -126,7 +126,7 @@ _test_case() {
 
 # TEST 4-1
 
-echo "DROP TABLE words;" | psql -d term_matching_db -U term_matcher -q
+echo "DROP TABLE IF EXISTS words;" | psql -d term_matching_db -U term_matcher -q
 
 q1=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
 "INTO TEMPORARY words " \
@@ -142,7 +142,7 @@ _test_case "4-1" "Compares words from text (parsed into separate table) to dicti
 
 # TEST 4-2
 
-echo "DROP TABLE words;" | psql -d term_matching_db -U term_matcher -q
+echo "DROP TABLE IF EXISTS words;" | psql -d term_matching_db -U term_matcher -q
 
 q2=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
 "INTO TEMPORARY words " \
@@ -150,6 +150,6 @@ q2=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[
 "WHERE docs.title = 'DOC'; " \
 "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, words " \
-"WHERE levenshtein_less_equal(words.tokens, dicts.DICT.term, 1);"`
+"WHERE levenshtein_less_equal(words.tokens, dicts.DICT.term, 1) <= 1;"`
 
 _test_case "4-2" "Compares words from text (parsed into separate table) to dictionary term using leveshtein_less_equal function." "${q2}"

@@ -85,7 +85,7 @@ _test() {
     local words=${stats[$doc]}
 
     # NOTE: Check loose_notes.md!
-    ./setup/dictionaries/configure_dict.sh $dict "dicts_config"
+    ./setup/dictionaries/configure_dicts.sh $dict "dicts_config"
     echo "UPDATE $dict SET term_query = phraseto_tsquery('dicts_config', term);" | psql -d term_matching_db -U term_matcher -q
     # NOTE: Check loose_notes.md!
 
@@ -114,8 +114,6 @@ _test_case() {
 
     local query_insertable=$(echo "$query" | tr -s " ")
     local query_insertable=${query_insertable//\'/\'\'}
-    echo $query_insertable
-    sleep 5
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
@@ -159,20 +157,20 @@ _test_case "3-2" "The text is parsed to a tsvector and each dictionary entry is 
 # TEST 3-3
 
 #Creating the index:
-echo "CREATE INDEX btree_${big_dict}_indx ON dicts.${big_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
-echo "CREATE INDEX btree_${medium_dict}_indx ON dicts.${medium_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
-echo "CREATE INDEX btree_${small_dict}_indx ON dicts.${small_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
+echo "CREATE INDEX gist_${big_dict}_indx ON dicts.${big_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
+echo "CREATE INDEX gist_${medium_dict}_indx ON dicts.${medium_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
+echo "CREATE INDEX gist_${small_dict}_indx ON dicts.${small_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
 
 q3=`echo "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, docs " \
-"WHERE to_tsvector('dicts_config', docs.document) @@ dicts.DICT.term_query" \
+"WHERE to_tsvector('dicts_config', docs.document) @@ dicts.DICT.term_query " \
 "AND docs.title = 'DOC';"`
 
 _test_case "3-3" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery. This case uses a GIST index on the tsquery. Text search functions use a previously prepared text-search dictionary." "${q3}"
 
-echo "DROP INDEX btree_${big_dict}_indx ON dicts.${big_dict};" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX btree_${medium_dict}_m_indx ON dicts.${medium_dict};" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX btree_${small_dict}_indx ON dicts.${small_dict};" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${big_dict}_indx ON dicts.${big_dict};" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${medium_dict}_m_indx ON dicts.${medium_dict};" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${small_dict}_indx ON dicts.${small_dict};" | psql -d term_matching_db -U term_matcher -q
 
 #---------------------------------------------------------------
 

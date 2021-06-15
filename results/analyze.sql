@@ -1,8 +1,13 @@
+DROP TABLE IF EXISTS correlations;
+DROP TABLE IF EXISTS avg_per;
+
+
 SELECT collection_id, 
     avg(execution_time) AS average_execution_on_big_data 
 FROM tests
 WHERE (document_name = 'Relativity' OR document_name = 'BNW_full') 
 AND dict_name = 'wiki_biology'
+AND matches != -1
 GROUP BY collection_id
 ORDER BY collection_id;
 
@@ -52,17 +57,20 @@ LIMIT 1;
 
 SELECT collection_id, dict_name, document_name, avg(matches / dict_entries ) AS avg_matches_per_entry, avg(matches / document_words) AS avg_matches_per_word
 FROM tests
+WHERE matches != -1
 GROUP BY (collection_id, dict_entries, document_words)
-ORDER BY collection_id;
+ORDER BY (collection_id, dict_name, document_name);
 
 SELECT collection_id, avg_matches_per_entry, avg_matches_per_word, query
 FROM (
     SELECT collection_id, avg(matches / dict_entries ) AS avg_matches_per_entry, avg(matches / document_words) AS avg_matches_per_word
     FROM tests
+    WHERE matches != -1
     GROUP BY collection_id
     ) AS foo INNER JOIN test_collections ON foo.collection_id = test_collections.id
 ORDER BY collection_id;
 
+SELECT count(*) FROM tests;
 
 
 

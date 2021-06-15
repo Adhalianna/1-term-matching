@@ -20,7 +20,7 @@ echo "DROP TABLE IF EXISTS dicts.wiki_cogn_medium;" | psql -d term_matching_db -
 echo "DROP TABLE IF EXISTS dicts.wiki_cogn_small;" | psql -d term_matching_db -U term_matcher -q
 
 # Create the base (full, big) dictionary 
-./setup/dictionaries/wikigraph.py "Embodied cognition" 2 wiki_cogn en
+./setup/dictionaries/wikigraph.py "Embodied cognition" 1 wiki_cogn en
 
 echo "UPDATE dicts.wiki_cogn " \
 "SET term_query = phraseto_tsquery(dicts.wiki_cogn.term);" | psql -d term_matching_db -U term_matcher -q # wikigraph.py was update to create tsquery on insert so this is unnecessary (or not?)

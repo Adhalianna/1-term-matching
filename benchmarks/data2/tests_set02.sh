@@ -149,9 +149,9 @@ _test_case "2-1" "The text is parsed to a tsvector and each dictionary entry is 
 # TEST 2-2
 
 #Creating the index:
-echo "CREATE INDEX btree_${big_dict}_indx ON dicts.${big_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
-echo "CREATE INDEX btree_${medium_dict}_indx ON dicts.${medium_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
-echo "CREATE INDEX btree_${small_dict}_indx ON dicts.${small_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
+echo "CREATE INDEX gist_${big_dict}_indx ON dicts.${big_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
+echo "CREATE INDEX gist_${medium_dict}_indx ON dicts.${medium_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
+echo "CREATE INDEX gist_${small_dict}_indx ON dicts.${small_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
 
 q2=`echo "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, docs " \
@@ -160,9 +160,9 @@ q2=`echo "SELECT count(dicts.DICT.id) " \
 
 _test_case "2-2" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery. This case uses a GIST index on the tsquery" "${q2}"
 
-echo "DROP INDEX btree_${big_dict}_indx ON dicts.${big_dict};" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX btree_${medium_dict}_m_indx ON dicts.${medium_dict};" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX btree_${small_dict}_indx ON dicts.${small_dict};" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${big_dict}_indx ON dicts.${big_dict};" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${medium_dict}_m_indx ON dicts.${medium_dict};" | psql -d term_matching_db -U term_matcher -q
+echo "DROP INDEX gist_${small_dict}_indx ON dicts.${small_dict};" | psql -d term_matching_db -U term_matcher -q
 
 #---------------------------------------------------------------
 

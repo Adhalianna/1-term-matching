@@ -1,7 +1,7 @@
 #!/bin/bash
 
 dictionary_name="$1"
-configuration_name="$2"
+configuration_name="${2:-dicts_config}"
 synonym_dict="syn_"$dictionary_name
 thesaurus_dict="thes_"$dictionary_name
 
