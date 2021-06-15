@@ -31,4 +31,4 @@ echo "CREATE TEXT SEARCH CONFIGURATION $configuration_name (" \
 
 echo "ALTER TEXT SEARCH CONFIGURATION $configuration_name " \
 "ALTER MAPPING FOR asciiword, asciihword, hword_asciipart, word, hword, hword_part " \
-"WITH $thesaurus_dict, $synonym_dict" | psql -d term_matching_db -U term_matcher
+"WITH pg_catalog.english_stem, $thesaurus_dict, $synonym_dict" | psql -d term_matching_db -U term_matcher
