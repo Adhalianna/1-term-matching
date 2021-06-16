@@ -8,7 +8,7 @@ DELETE FROM tests WHERE execution_time = interval '0 milliseconds';
 
 The complete set of collected statistics includes:
 * Number of words in the text and number of entries in the dictionary
-* Number of matches (-1 in case of queries that returned different kind of information)
+* Number of matches 
 * Names of used dictionaries and texts
 * Test and test collection id which can be used to refer to the used query and its description
 * A timestamp
@@ -23,7 +23,7 @@ SELECT * FROM tests;
  1338 | 1-1-10  | 2021-06-16 00:42:18.469682 | 1-1           | wiki_cogn_small   |          153 | Relativity_0  |          11019 | 00:00:00.142   |       5
  1339 | 1-1-11  | 2021-06-16 00:42:18.755672 | 1-1           | wiki_cogn_small   |          153 | Relativity_1  |          23575 | 00:00:00.245   |       8
  1340 | 1-1-12  | 2021-06-16 00:42:19.183726 | 1-1           | wiki_cogn_small   |          153 | Relativity_2  |          35096 | 00:00:00.388   |       8
- 1341 | 1-1-13  | 2021-06-16 00:42:19.478594 | 1-1           | wiki_cogn_medium  |          306 | Relativity_0  |          11019 | 00:00:00.252   |      17
+ 1341 | 1-1-13  | 2021-06-16 00:42:19.478594 | 1-1           | wiki_cogn_medium  |          306 | Relativity(strip(to_tsvector('english', dicts.{name}.term)))_0  |          11019 | 00:00:00.252   |      17
  1342 | 1-1-14  | 2021-06-16 00:42:20.02892  | 1-1           | wiki_cogn_medium  |          306 | Relativity_1  |          23575 | 00:00:00.508   |      20
  1343 | 1-1-15  | 2021-06-16 00:42:20.817728 | 1-1           | wiki_cogn_medium  |          306 | Relativity_2  |          35096 | 00:00:00.745   |      20
  1344 | 1-1-16  | 2021-06-16 00:42:21.333059 | 1-1           | wiki_cogn         |          613 | Relativity_0  |          11019 | 00:00:00.473   |      34
@@ -31,7 +31,24 @@ SELECT * FROM tests;
 ...
 ```
 
+Because of long execution times (despite using a rather resourceful PC, with 16 threads, 32 GB of RAM, SSD) most samples used rather short texts and small dictionaries.
+
+```sql
+---To see the test that executed the longest:
+SELECT test_id, dict_name, dict_entries, document_words, execution_time
+FROM tests
+ORDER BY execution_time DESC
+LIMIT 1;
+
+ test_id |     dict_name     | dict_entries | document_name | document_words | execution_time 
+---------+-------------------+--------------+---------------+----------------+----------------
+ 3-2-7   | wiki_alpha        |        17520 | BNW_0         |           6030 | 03:42:03.503
+
+```
+
 # The most reliable
+
+As reliabilty understood is the confidence that a given query will return as many correct matches as possible.
 
 Below is a list of queries that represent different strategies of acquiring the matches nested as a subqeueries. Execution of the following returns all matches collected in test cases with smallest dictionary and shortest text.
 
@@ -109,22 +126,63 @@ ORDER BY q5_match
               |              |          |              | mind
 ```
 We can see that the queries found at most 5 different term matches. Among them only queries nr __1__ and __5__ found all 5 matches while queries nr __2__, __3__, __4__ did not match all possibilities. Investigating the queried text in any text editior that has a search functionality we can see that indeed all 5 terms are present and the word _"mind"_ appears at least 4 times. Queries nr __1__, __3__, __4__ were constructed in such a way that they would stop at the first match for a given term (They iterated over dictionary rather than text). It is surprising that the query nr __4__ which used text search functionalities with customized text search configuration __failed to match all the possibilities__, similarly query nr __3__ which used the default configuration. The reason why query nr __2__ failed to match term _"class"_ was because it occured in the form of _"classes"_. In the given sample none of the queries returned false positives. 
+Once a bigger dictionary (*wiki_cogn_medium*) is used we can observe other characteristics of the queries:
 
 ```
+   q1_match   |   q2_match   |     q3_match      |     q4_match      |   q5_match   
+--------------+--------------+-------------------+-------------------+--------------
+ time         | choice       | class             | choice            | choice
+ norm!        | idea         | idea              | existence         | class
+ mind         | idea         | mind              | idea              | idea
+ meta!        | idea         | mind–body problem!| identity          | idea
+ logic!       | identity     | time              | intelligence      | idea
+ intelligence | identity     |                   | mind              | idea
+ identity     | intelligence |                   | mind–body problem!| identity
+ choice       | intelligence |                   | time              | identity
+ class        | mind         |                   |                   | intelligence
+ idea         | mind         |                   |                   | intelligence
+ existence    | time         |                   |                   | meta!
+              | time         |                   |                   | mind
+              | time         |                   |                   | mind
+              | time         |                   |                   | mind
+              | time         |                   |                   | mind
+              | time         |                   |                   | mind
+              | time         |                   |                   | mind
+              | time         |                   |                   | mind
+              | time         |                   |                   | mind
+              | time         |                   |                   | norm!
+              |              |                   |                   | pain!
+              |              |                   |                   | pain!
+              |              |                   |                   | soul!
+              |              |                   |                   | time
+              |              |                   |                   | time
+              |              |                   |                   | time
+              |              |                   |                   | time
+              |              |                   |                   | time
+              |              |                   |                   | time
+              |              |                   |                   | time
+              |              |                   |                   | time
+              |              |                   |                   | time
+              |              |                   |                   | time
 ```
+First, the word _"norm"_ is a false positive, words such as _"normally"_ do appear in the text but if we were interested in getting a definition words _"norm"_ and _"normally"_ have slightly different semantics. Simalrly words _"meta"_, _"logic"_, _"pain"_, _"soul"_ and the phrase _"mind-body problem"_. They were marked with an exclamation symbol. Out of 9 different words 4 were false positives in the case of query nr __5__. While query nr __2__ returned no false positives it also matched the smallest number of distinct terms (6). It can be also observed on the sample that the only queries capable of matching __phrases__ are queries nr __3__ and __4__. Among those two query number __4__ returns more matches. 
 
-# The fastest
+All the queries have different characteristics:
 
-The toughest tests were the ones that used a dictionary with around 70 000 entries and a text containg a whole book (Huxley's "Brave New World"). This exam showed some disappointments and some clear winners:
+* __1__: Can match _"logic"_ in _"phsycoligically"_, prone to false positives, cannot match phrases
+* __2__: Does not return any false positives but also can match only exactly identical to terms words and cannot match phrases.
+* __3__: Can match phrases and return some (few) false positives but retruns less matches than nr __4__
+* __4__: Can match phrases and return some false positives, more matches than nr __3__
+* __5__: Returns the biggest number of matches and false positives
 
-```sql
+Repeating the analysis with even bigger dictionary leads to similar conclusions with a new note that the queries nr __3__ and __4__ return false matches mainly if not only on phrases and the difference in the amount of returned matches is rather significant.
 
-```
-```
-```
+## Verdict
 
+Query nr __4__ might be considered the most reliable unless false positives on phrases are unacceptable.
 
-# The best scalling
+# The fastest and the best scalling
+
 
 ```sql
 SELECT collection_id, 
@@ -181,4 +239,5 @@ The query which scaled the worst with the increasing number of words:
 
 # The most disappointing
 
+Queries that used Postgres full text search functionalities with a default configuration executed the slowest and returned few matches. 
 
