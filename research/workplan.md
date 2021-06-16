@@ -31,5 +31,6 @@ The documentation should be expanded at each step of the project to keep track o
 * Create dictionaries using wordnet
 * ~~Refactor the first two sections of each tests' set/collection into something more universal and easier to edit (but before check loose_notes.md)~~
 * ~~Run tests with smaller dictionaries (70000 records take too much time with text-search functions)~~
+* \[Optional] Parametarize the project to be able to use a different than english language
 * \[Optional refactoring] Skip creating user on the OS and make scripts parametarized with database name, user name and password.
 * \[Optional] Move project to Docker. 
