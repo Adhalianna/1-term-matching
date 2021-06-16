@@ -32,42 +32,19 @@ except IndexError:
 
 terms = []
 try:
-    cur.execute(sql.SQL("SELECT lexeme FROM (SELECT unnest(to_tsvector('english', dicts.{name}.term)) FROM dicts.{name}) AS foo;").format(name=sql.Identifier(table_name)))
+    cur.execute(sql.SQL("SELECT * FROM (SELECT trim(both '(,)' from unnest(strip(to_tsvector('english', dicts.{name}.term)))::text) FROM dicts.{name}) AS foo;").format(name=sql.Identifier(table_name)))
     terms = cur.fetchall()
 except:
     print("Failed to fetch terms from a dictionary.")
 
 db.commit()
 
-
 try:
-    thesaurus_dict = open(path + "/thes_fuzzy_" + table_name + ".ths", "w")
+    syn_dict = open(path + "/syn_fuzzy_" + table_name + ".syn", "w") # currently not used!
 except PermissionError:
     raise SystemExit("Run the software with permissions necessary to put a new file under the provided path.")
-    
-syn_dict = open(path + "/syn_fuzzy_" + table_name + ".syn", "w") # currently not used!
-
-stop_words = []
-with open(path + "/english.stop") as fp:
-    lines = fp.readlines()
-    for line in lines:
-        stop_words.append(line.replace('\n', ""))
 
 for term in terms:
-    try:
-        the_string = term[0].strip("'")
-    except:
-        the_string = ""
-    if the_string.isalpha() != True:
-        translated_string = the_string.replace(' ', '_')
-        for stpword in stop_words:
-            the_string = re.sub(r"\b" + stpword + r"\b", "?", the_string)
-        if the_string != "":
-            thesaurus_dict.write(the_string + " : " + translated_string + "\n")
-            syn_dict.write(translated_string + "   " + translated_string +"\n")
-    else:
-        syn_dict.write(the_string + "   " + the_string + "\n")
-
-
+    syn_dict.write(str(term[0]) + "   " + str(term[0]) +"\n")
 cur.close()
 db.close()
