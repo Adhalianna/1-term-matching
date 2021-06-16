@@ -1,12 +1,10 @@
 #!/bin/bash
 
-
-small_dict="wiki_biology_small"
-medium_dict="wiki_biology_medium"
-big_dict="wiki_biology"
+small_dict="wiki_alpha_small"
+medium_dict="wiki_alpha_medium"
+big_dict="wiki_alpha"
 
 dictionaries=("$small_dict" "$medium_dict" "$big_dict")
-
 
 short_text="Relativity_0"
 medium_text="Relativity_1"
@@ -79,6 +77,7 @@ long_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     | tail -n 1`
 stats[$long_text]="$long_text_words"
 
+
 #---------------------------------------------------------------
 
 _test() {
@@ -121,7 +120,7 @@ _test_case() {
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
-    counter="18"
+    counter="9"
     for i in "${dictionaries[@]}"; do
         for j in "${documents[@]}"; do
             counter=$((counter + 1))
@@ -163,7 +162,7 @@ _test_case "1-1" "The text is searched for term matches using a query based on I
 
 # TEST 1-3
 
-echo "DROP TABLE IF EXISTS words;" | psql -d term_matching_db -U term_matcher -q
+echo "DROP TABLE words;" | psql -d term_matching_db -U term_matcher -q
 
 q3=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
 "INTO TEMPORARY words " \

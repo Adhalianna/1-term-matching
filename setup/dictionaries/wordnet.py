@@ -10,7 +10,7 @@ try:
     start_word = sys.argv[1]
     depth = int(sys.argv[2])
 except IndexError:
-    raise SystemExit("Missing program arguments. Pass a starting word and a depth of sysnonyms search. (e.g. depth 2: get synonyms of the word and their synonyms)")
+    raise SystemExit("Missing program arguments. Pass a starting word and a depth of synonyms search. (e.g. depth 2: get synonyms of the word and their synonyms)")
 
 if len(sys.argv) > 3:
     table_name = sys.argv[3]

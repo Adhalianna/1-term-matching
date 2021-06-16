@@ -1,8 +1,8 @@
 #!/bin/bash
 
-small_dict="wiki_biology_small"
-medium_dict="wiki_biology_medium"
-big_dict="wiki_biology"
+small_dict="wiki_alpha_small"
+medium_dict="wiki_alpha_medium"
+big_dict="wiki_alpha"
 
 dictionaries=("$small_dict" "$medium_dict" "$big_dict")
 
@@ -76,6 +76,7 @@ long_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     | tail -n 1`
 stats[$long_text]="$long_text_words"
 
+
 #---------------------------------------------------------------
 
 _test() {
@@ -123,7 +124,7 @@ _test_case() {
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
-    counter="18"
+    counter="9"
     for i in "${dictionaries[@]}"; do
         for j in "${documents[@]}"; do
             counter=$((counter + 1))
@@ -144,7 +145,7 @@ _test_case() {
 # "FROM docs " \
 # "WHERE docs.title = 'DOC';"`
 
-# _test_case "3-1" "Generates a tsvector using a modified  text-search dictionary." "${q1}"
+# _test_case "3-1" "Generates a tsvector using a modified  text-search dictionary." "${q1}" 
 
 
 #---------------------------------------------------------------
@@ -169,7 +170,7 @@ echo "CREATE INDEX gist_${small_dict}_indx ON dicts.${small_dict} USING GIST (te
 
 q3=`echo "SELECT count(dicts.DICT.id) " \
 "FROM dicts.DICT, docs " \
-"WHERE to_tsvector('dicts_config', docs.document) @@ dicts.DICT.term_query" \
+"WHERE to_tsvector('dicts_config', docs.document) @@ dicts.DICT.term_query " \
 "AND docs.title = 'DOC';"`
 
 _test_case "3-3" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery. This case uses a GIST index on the tsquery. Text search functions use a previously prepared text-search dictionary." "${q3}"

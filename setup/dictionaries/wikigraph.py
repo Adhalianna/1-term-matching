@@ -75,7 +75,7 @@ try:
         definition text
         );""").format(sql.Identifier(table_name)))
 except:
-    print("Failed to create table.")
+    print("Failed to create table for the dictionary. The name may already be taken. Quitting the script.")
     exit(1)
 
 db.commit()

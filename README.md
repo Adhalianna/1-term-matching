@@ -47,7 +47,7 @@ Benchmarks are most often called here _tests_. Since the benchmarks make very fe
 
 ### Initialize script
 
-The script at the root of the repository called [initialize.sh](initialize.sh) will only perform benchmarks from directory [data2](benchmarks/data2) as those can be finished in a reasonable time whilst the data preparation step under [data1](benchmarks/data1/prepare_dataset1.sh) will attempt to create an extremely big dictionary. (The process is best interrupted, stopped, with e.g. `ctrl+c` shortcut when the number of entries starts to look satisfying.)
+The script runs all other scripts which may be of interest when starting with the repository. 
 
 ## Using scripts
 

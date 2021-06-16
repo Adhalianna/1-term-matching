@@ -9,9 +9,9 @@ dictionaries=("$small_dict" "$medium_dict" "$big_dict")
 
 short_text="BNW_0"
 medium_text="BNW_1"
-full_text="BNW_2"
+long_text="BNW_2"
 
-documents=("$short_text" "$medium_dict" "$full_text")
+documents=("$short_text" "$medium_text" "$long_text")
 
 #---------------------------------------------------------------
 
@@ -52,17 +52,29 @@ short_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     | tail -n 1`
 stats[$short_text]="$short_text_words"
 
-full_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+medium_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
     "INTO TEMPORARY words " \
     "FROM docs " \
-    "WHERE docs.title = '$full_text'; " \
+    "WHERE docs.title = '$medium_text'; " \
     "SELECT count(*) " \
     "FROM words;" \
     | psql -d term_matching_db -U term_matcher \
     | grep -m 2 -Eo '[0-9]{1,9}' \
     | tail -n 1`
-stats[$full_text]="$full_text_words"
+stats[$medium_text]="$medium_text_words"
+
+long_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
+    "'([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
+    "INTO TEMPORARY words " \
+    "FROM docs " \
+    "WHERE docs.title = '$long_text'; " \
+    "SELECT count(*) " \
+    "FROM words;" \
+    | psql -d term_matching_db -U term_matcher \
+    | grep -m 2 -Eo '[0-9]{1,9}' \
+    | tail -n 1`
+stats[$long_text]="$long_text_words"
 
 #---------------------------------------------------------------
 

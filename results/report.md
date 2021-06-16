@@ -13,111 +13,115 @@ The complete set of collected statistics includes:
 * Test and test collection id which can be used to refer to the used query and its description
 * A timestamp
 
-For example, 
+For example:
+
+```sql
+SELECT * FROM tests;
+
+  id  | test_id |         exec_date          | collection_id |     dict_name     | dict_entries | document_name | document_words | execution_time | matches 
+------+---------+----------------------------+---------------+-------------------+--------------+---------------+----------------+----------------+---------
+ 1338 | 1-1-10  | 2021-06-16 00:42:18.469682 | 1-1           | wiki_cogn_small   |          153 | Relativity_0  |          11019 | 00:00:00.142   |       5
+ 1339 | 1-1-11  | 2021-06-16 00:42:18.755672 | 1-1           | wiki_cogn_small   |          153 | Relativity_1  |          23575 | 00:00:00.245   |       8
+ 1340 | 1-1-12  | 2021-06-16 00:42:19.183726 | 1-1           | wiki_cogn_small   |          153 | Relativity_2  |          35096 | 00:00:00.388   |       8
+ 1341 | 1-1-13  | 2021-06-16 00:42:19.478594 | 1-1           | wiki_cogn_medium  |          306 | Relativity_0  |          11019 | 00:00:00.252   |      17
+ 1342 | 1-1-14  | 2021-06-16 00:42:20.02892  | 1-1           | wiki_cogn_medium  |          306 | Relativity_1  |          23575 | 00:00:00.508   |      20
+ 1343 | 1-1-15  | 2021-06-16 00:42:20.817728 | 1-1           | wiki_cogn_medium  |          306 | Relativity_2  |          35096 | 00:00:00.745   |      20
+ 1344 | 1-1-16  | 2021-06-16 00:42:21.333059 | 1-1           | wiki_cogn         |          613 | Relativity_0  |          11019 | 00:00:00.473   |      34
+
+...
+```
+
+# The most reliable
+
+Below is a list of queries that represent different strategies of acquiring the matches nested as a subqeueries. Execution of the following returns all matches collected in test cases with smallest dictionary and shortest text.
+
+```sql
+SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens
+INTO TEMPORARY words
+FROM docs
+WHERE docs.title = 'BNW_0';
+
+SELECT q1_match, q2_match, q3_match, q4_match, q5_match
+FROM 
+(
+--Query number 1 (tests 1-1)
+SELECT dicts.wiki_cogn_small.term AS q1_match
+FROM dicts.wiki_cogn_small, docs
+WHERE docs.document
+ILIKE concat('%', dicts.wiki_cogn_small.term, '%')
+AND docs.title = 'BNW_0'
+ORDER BY q1_match
+) AS Q1 
+FULL OUTER JOIN 
+(
+--Query number 2 (tests 1-3 / 1-4 / 1-5)
+SELECT dicts.wiki_cogn_small.term AS q2_match
+FROM dicts.wiki_cogn_small, words
+WHERE words.tokens = dicts.wiki_cogn_small.term
+ORDER BY q2_match
+) AS Q2 ON 1 = 0
+FULL OUTER JOIN 
+(
+--Query number 3 (tests 2-1 / 2-2)
+SELECT dicts.wiki_cogn_small.term AS q3_match
+FROM dicts.wiki_cogn_small, docs
+WHERE to_tsvector(docs.document) @@ dicts.wiki_cogn_small.term_query
+AND docs.title = 'BNW_0'
+ORDER BY q3_match
+) AS Q3 ON 1 = 0
+FULL OUTER JOIN 
+(
+--Query number 4 (tests 3-2 / 3-3 / 3-4)
+SELECT dicts.wiki_cogn_small.term AS q4_match
+FROM dicts.wiki_cogn_small, docs
+WHERE to_tsvector('dicts_config', docs.document) @@ dicts.wiki_cogn_small.term_query
+AND docs.title = 'BNW_0'
+ORDER BY q4_match
+) AS Q4 ON 1 = 0
+FULL OUTER JOIN
+(
+--Query number 5 (tests 4-1 / 4-2)
+SELECT dicts.wiki_cogn_small.term AS q5_match
+FROM dicts.wiki_cogn_small, words
+WHERE levenshtein(words.tokens, dicts.wiki_cogn_small.term) <= 1
+ORDER BY q5_match
+) AS Q5 ON 1 = 0;
+```
+
+```
+(altered results for readability)
+
+   q1_match   |   q2_match   | q3_match |   q4_match   |   q5_match   
+--------------+--------------+----------+--------------+--------------
+ choice       | choice       | class    | identity     | choice
+ class        | identity     | mind     | intelligence | class
+ identity     | identity     |          | mind         | identity
+ intelligence | intelligence |          |              | identity
+ mind         | intelligence |          |              | intelligence
+              | mind         |          |              | intelligence
+              | mind         |          |              | mind
+              |              |          |              | mind
+              |              |          |              | mind
+              |              |          |              | mind
+              |              |          |              | mind
+              |              |          |              | mind
+              |              |          |              | mind
+              |              |          |              | mind
+```
+We can see that the queries found at most 5 different term matches. Among them only queries nr __1__ and __5__ found all 5 matches while queries nr __2__, __3__, __4__ did not match all possibilities. Investigating the queried text in any text editior that has a search functionality we can see that indeed all 5 terms are present and the word _"mind"_ appears at least 4 times. Queries nr __1__, __3__, __4__ were constructed in such a way that they would stop at the first match for a given term (They iterated over dictionary rather than text). It is surprising that the query nr __4__ which used text search functionalities with customized text search configuration __failed to match all the possibilities__, similarly query nr __3__ which used the default configuration. The reason why query nr __2__ failed to match term _"class"_ was because it occured in the form of _"classes"_. In the given sample none of the queries returned false positives. 
+
+```
+```
 
 # The fastest
 
 The toughest tests were the ones that used a dictionary with around 70 000 entries and a text containg a whole book (Huxley's "Brave New World"). This exam showed some disappointments and some clear winners:
 
 ```sql
-SELECT collection_id, average_execution_on_big_data, matches, descr, query
-FROM (
-    SELECT collection_id, 
-        avg(execution_time) AS average_execution_on_big_data,
-        max(matches) AS matches
-    FROM tests 
-    WHERE document_name = 'BNW_full'
-    AND dict_name = 'wiki_biology'
-    AND matches != -1
-    GROUP BY collection_id
-) AS foo
-INNER JOIN test_collections ON collection_id = test_collections.id
-ORDER BY average_execution_on_big_data;
+
 ```
 ```
 ```
-
-# The most reliable
-
-Below is a list of queries that represent different strategies of acquiring the matches.
-
-```sql
---Query number 1 (tests 1-1)
-SELECT dicts.wiki_biology.term
-FROM dicts.wiki_biology, docs
-WHERE docs.document
-ILIKE concat('%', dicts.wiki_biology.term, '%')
-AND docs.title = 'BNW_short'
-LIMIT 20;
-
---Query number 2 (tests 1-3 / 1-4 / 1-5)
-SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens
-INTO TEMPORARY words
-FROM docs
-WHERE docs.title = 'BNW_short';
-SELECT dicts.wiki_biology.term
-FROM dicts.wiki_biology, words
-WHERE words.tokens = dicts.wiki_biology.term
-LIMIT 20;
-
---Query number 3 (tests 2-1 / 2-2)
-SELECT dicts.wiki_biology.term
-FROM dicts.wiki_biology, docs
-WHERE to_tsvector(docs.document) @@ dicts.wiki_biology.term_query
-AND docs.title = 'BNW_short'
-LIMIT 20;
-
---Query number 4 (tests 3-2 / 3-3 / 3-4)
-SELECT dicts.wiki_biology.term
-FROM dicts.wiki_biology, docs
-WHERE to_tsvector('dicts_config', docs.document) @@ dicts.wiki_biology.term_query
-AND docs.title = 'BNW_short'
-LIMIT 20;
-
---Query number 5 (tests 4-1 / 4-2)
-SELECT dicts.wiki_biology.term
-FROM dicts.wiki_biology, words
-WHERE levenshtein(words.tokens, dicts.wiki_biology.term) <= 1
-LIMIT 20;
-```
-
-<!-- ```sql
---this in not how an actual queries result look like (the resu)
-
-      1     |     2     |         3          |         4         |  5   |  
-------------+-----------+--------------------+-------------------+------+
- scar       | metal     | process            | takes too long... | lund |
- budding    | bird      | lip                | takes too long... | lund |
- centimetre | history   | express            | takes too long... | lund |
- habit      | history   | missouri           | takes too long... | sic  |
- test       | history   | 3-hexanol ...      | takes too long... | sic  |
- behaviour  | history   | long-form journ... | takes too long... | sic  |
- caustic    | history   | shoot              | takes too long... | sic  |
- nu         | gravity   | iron               | takes too long... | sic  |
- gela       | privilege | 3-hydroxyisobut... | takes too long... | sic  |
- history    | privilege | 3-quinuclidinyl... | takes too long... | sic  |
- chi        | solved    | robert a. good     | takes too long... | von  |
- epsilon    | solved    | stephen g. brush   | takes too long... | von  |
- ash        | solved    | factor 10          | takes too long... | von  |
- nickel     | process   | lime               | takes too long... | von  |
- l          | process   | double-slit expe...| takes too long... | von  |
- æ          | process   | 5-methyluridine    | takes too long... | von  |
- ox         | process   | 5-methyluridine ...| takes too long... | von  |
- milli      | process   | ur                 | takes too long... | von  |
- jet        | process   | good               | takes too long... | von  |
- philo      | process   | turn               | takes too long... | von  |
-```
-
-When we compare the results with e.g. 5000 first characters of the used document and run some additional queries we might notice oddities of each query:
-* Query number 4 takes too long to execute
-* The word "privilege" does appear among those first words of the book and should be matched exactly as is (it exists in the dictionary). It precedes word "lips" which should be matched by _fuzzy_ queries. Query number 3 which does not match "privilege" before "lip" can be considered unreliable
-* "nickel" appears before the "privilege" and "process" in the text
-* Queries number 1, 3, 4 return matches by the order of appearance in the dictionary entries first. Queries number 2 and 5 iterated over words of the text first which makes the difference between their results odd.
-* Query number 2 seems more reliable than the query number 5
-* Word "epsilon" is a guarnteed match
-* Words returned by query 1 have much higher ids than the words returned by query 3 suggesting that the query number 3 successfully matched what number 1 could not match.
-* Phrase "double-slit experiment" does not appear in the book. -->
-
 
 
 # The best scalling

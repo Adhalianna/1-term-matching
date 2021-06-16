@@ -1,8 +1,8 @@
 #!/bin/bash
 
-small_dict="wiki_biology_small"
-medium_dict="wiki_biology_medium"
-big_dict="wiki_biology"
+small_dict="wiki_alpha_small"
+medium_dict="wiki_alpha_medium"
+big_dict="wiki_alpha"
 
 dictionaries=("$small_dict" "$medium_dict" "$big_dict")
 
@@ -76,6 +76,7 @@ long_text_words=`echo "SELECT regexp_split_to_table(lower(docs.document), " \
     | tail -n 1`
 stats[$long_text]="$long_text_words"
 
+
 #---------------------------------------------------------------
 
 _test() {
@@ -118,7 +119,7 @@ _test_case() {
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
-    counter="18"
+    counter="9"
     for i in "${dictionaries[@]}"; do
         for j in "${documents[@]}"; do
             counter=$((counter + 1))
