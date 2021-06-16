@@ -13,7 +13,7 @@ long_text="${2}_2"
 
 documents=("$short_text" "$medium_text" "$long_text")
 
-counter_start="${3:-100}"
+counter_start="${3:-0}"
 counter_start=$((counter_start * 9))
 
 #---------------------------------------------------------------
