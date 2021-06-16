@@ -9,6 +9,9 @@ case $input in
         echo "DROP TABLE IF EXISTS dicts.wiki_cogn;" | psql -d term_matching_db -U term_matcher -q
         echo "DROP TABLE IF EXISTS dicts.wiki_cogn_medium;" | psql -d term_matching_db -U term_matcher -q
         echo "DROP TABLE IF EXISTS dicts.wiki_cogn_small;" | psql -d term_matching_db -U term_matcher -q
+        # Create the base (full, big) dictionary 
+        ../../setup/dictionaries/wikigraph.py "Embodied cognition" 1 wiki_cogn en
+
         ;;
     [nN][oO]|[nN])
         ;;
@@ -20,9 +23,6 @@ esac
 
 # Import texts
 ../../setup/texts/parse_pdf.py ../../setup/texts/Einstein_Relativity.pdf Relativity 3
-
-# Create the base (full, big) dictionary 
-../../setup/dictionaries/wikigraph.py "Embodied cognition" 1 wiki_cogn en
 
 echo "UPDATE dicts.wiki_cogn " \
 "SET term_query = phraseto_tsquery(dicts.wiki_cogn.term);" | psql -d term_matching_db -U term_matcher -q # wikigraph.py was update to create tsquery on insert so this is unnecessary (or not?)

@@ -9,6 +9,8 @@ case $input in
         echo "DROP TABLE IF EXISTS dicts.wiki_alpha;" | psql -d term_matching_db -U term_matcher -q
         echo "DROP TABLE IF EXISTS dicts.wiki_alpha_medium;" | psql -d term_matching_db -U term_matcher -q
         echo "DROP TABLE IF EXISTS dicts.wiki_alpha_small;" | psql -d term_matching_db -U term_matcher -q
+        # Create the base (full, big) dictionary 
+        ../../setup/dictionaries/wikigraph.py "Dominance hierarchy" 2 wiki_alpha en
         ;;
     [nN][oO]|[nN])
         ;;
@@ -21,8 +23,6 @@ esac
 # Import texts
 ../../setup/texts/parse_pdf.py ../../setup/texts/Brave_New_World.pdf BNW 3
 
-# Create the base (full, big) dictionary 
-../../setup/dictionaries/wikigraph.py "Dominance hierarchy" 2 wiki_alpha en
 
 echo "UPDATE dicts.wiki_alpha " \
 "SET term_query = phraseto_tsquery(dicts.wiki_alpha.term);" | psql -d term_matching_db -U term_matcher -q # wikigraph.py was update to create tsquery on insert so this is unnecessary (or not?)
