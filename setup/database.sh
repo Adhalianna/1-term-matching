@@ -1,5 +1,7 @@
 #!/bin/sh
 
+cd $(dirname $0)
+
 echo "The initialization script will create a new Postgres database and a new user. It requires sudoers rights to be able to act as a postgres user on the system."
 read -r -p "Do you wish to proceed? [Y/n]" input
 
@@ -55,7 +57,4 @@ alias sql="psql -d term_matching_db -U term_matcher -c" #a bit of simplification
 #cd setup #move to correct directory
 
 # Now, just load the database.sql file
-sql "\ir setup/database.sql"
-
-#cd ..
-echo "Remember to remove the term_matcher from your users on OS and Postgres when you no longer need it."
+sql "\ir database.sql"
