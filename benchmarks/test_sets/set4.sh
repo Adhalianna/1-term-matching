@@ -1,23 +1,27 @@
 #!/bin/bash
 
-small_dict="wiki_alpha_small"
-medium_dict="wiki_alpha_medium"
-big_dict="wiki_alpha"
+small_dict="${1}_small"
+medium_dict="${1}_medium"
+big_dict="$1"
 
 dictionaries=("$small_dict" "$medium_dict" "$big_dict")
 
 
-short_text="Relativity_0"
-medium_text="Relativity_1"
-long_text="Relativity_2"
+short_text="${2}_0"
+medium_text="${2}_1"
+long_text="${2}_2"
 
 documents=("$short_text" "$medium_text" "$long_text")
 
+counter_start="${3:-100}"
+counter_start=$((counter_start * 9))
+
 #---------------------------------------------------------------
 
-echo "The second test collection uses postgres full-text search capabilities."
-echo "Fist part of the queries will count the number of matches found."
-echo "The second part of the set will perform extra queries that return something else than a count of results"
+echo "The last test collection utilizes a levenshtein distance from a fuzzystrmatch module"
+echo "It issues two queries."
+echo "They should return exactly the same number of matches."
+echo "The second query uses a better optimized version of the levenshtein() function."
 echo "The time of execution will be measured by Postgres."
 
 #---------------------------------------------------------------
@@ -119,7 +123,7 @@ _test_case() {
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
-    counter="9"
+    counter="$counter_start"
     for i in "${dictionaries[@]}"; do
         for j in "${documents[@]}"; do
             counter=$((counter + 1))
@@ -134,61 +138,32 @@ _test_case() {
 
 #---------------------------------------------------------------
 
-# TEST 2-1
+# TEST 4-1
 
-q1=`echo "SELECT count(dicts.DICT.id) " \
-"FROM dicts.DICT, docs " \
-"WHERE to_tsvector(docs.document) @@ dicts.DICT.term_query" \
-"AND docs.title = 'DOC';"`
+echo "DROP TABLE IF EXISTS words;" | psql -d term_matching_db -U term_matcher -q
 
-_test_case "2-1" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery." "${q1}"
+q1=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
+"INTO TEMPORARY words " \
+"FROM docs " \
+"WHERE docs.title = 'DOC'; " \
+"SELECT count(dicts.DICT.id) " \
+"FROM dicts.DICT, words " \
+"WHERE levenshtein(words.tokens,dicts.DICT.term) <= 1;"`
 
-#---------------------------------------------------------------
-
-# TEST 2-2
-
-#Creating the index:
-echo "CREATE INDEX gist_${big_dict}_indx ON dicts.${big_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
-echo "CREATE INDEX gist_${medium_dict}_indx ON dicts.${medium_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
-echo "CREATE INDEX gist_${small_dict}_indx ON dicts.${small_dict} USING GIST (term_query);" | psql -d term_matching_db -U term_matcher -q
-
-q2=`echo "SELECT count(dicts.DICT.id) " \
-"FROM dicts.DICT, docs " \
-"WHERE to_tsvector(docs.document) @@ dicts.DICT.term_query" \
-"AND docs.title = 'DOC';"`
-
-_test_case "2-2" "The text is parsed to a tsvector and each dictionary entry is used in the form of a previously prepared tsquery. This case uses a GIST index on the tsquery" "${q2}"
-
-echo "DROP INDEX gist_${big_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX gist_${medium_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
-echo "DROP INDEX gist_${small_dict}_indx;" | psql -d term_matching_db -U term_matcher -q
+_test_case "4-1" "Compares words from text (parsed into separate table) to dictionary term using leveshtein distance." "${q1}"
 
 #---------------------------------------------------------------
 
-# # TEST 2-3
+# TEST 4-2
 
-# q3=`echo "SELECT to_tsvector(docs.document) @@ to_tsquery( " \
-# "array_to_string( " \
-# "ARRAY( " \
-# "SELECT dicts.DICT.term " \
-# "FROM dicts.DICT " \
-# "), " \
-# "' | ' " \
-# ")::text " \
-# ") AS does_it_contain " \
-# "FROM docs " \
-# "WHERE docs.title = 'DOC';"`
+echo "DROP TABLE IF EXISTS words;" | psql -d term_matching_db -U term_matcher -q
 
-# _test_case "2-3" "The whole dictionary is transformed into a single tsquery. It tells only whether there are any matches" "${q3}" "false"
+q2=`echo "SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?\"]*[[:space:]]+|\.)') tokens " \
+"INTO TEMPORARY words " \
+"FROM docs " \
+"WHERE docs.title = 'DOC'; " \
+"SELECT count(dicts.DICT.id) " \
+"FROM dicts.DICT, words " \
+"WHERE levenshtein_less_equal(words.tokens, dicts.DICT.term, 1) <= 1;"`
 
-# #---------------------------------------------------------------
-
-# # TEST 2-4
-
-# q4=`echo "SELECT " \
-# "ts_headline(docs.document, phraseto_tsquery(dicts.DICT.term))" \
-# "WHERE docs.ts_tokens @@ dicts.DICT.term_query"` \
-# "AND docs.title = 'DOC'"
-
-# _test_case "2-4" "A Postgres function ts_headline is used to show matches inside the text. Terms are used as previously prepared queries." "${q4}" "false"
-
+_test_case "4-2" "Compares words from text (parsed into separate table) to dictionary term using leveshtein_less_equal function." "${q2}"

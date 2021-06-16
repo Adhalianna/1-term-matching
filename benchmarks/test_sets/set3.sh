@@ -1,17 +1,22 @@
 #!/bin/bash
 
-small_dict="wiki_alpha_small"
-medium_dict="wiki_alpha_medium"
-big_dict="wiki_alpha"
+cd $(dirname $0)
+
+small_dict="${1}_small"
+medium_dict="${1}_medium"
+big_dict="$1"
 
 dictionaries=("$small_dict" "$medium_dict" "$big_dict")
 
 
-short_text="Relativity_0"
-medium_text="Relativity_1"
-long_text="Relativity_2"
+short_text="${2}_0"
+medium_text="${2}_1"
+long_text="${2}_2"
 
 documents=("$short_text" "$medium_text" "$long_text")
+
+counter_start="${3:-100}"
+counter_start=$((counter_start * 9))
 
 #---------------------------------------------------------------
 
@@ -92,7 +97,7 @@ _test() {
     local words=${stats[$doc]}
 
     # NOTE: Check loose_notes.md!
-    ./setup/dictionaries/configure_dicts.sh $dict "dicts_config"
+    ../../setup/dictionaries/configure_dicts.sh $dict "dicts_config"
     echo "UPDATE $dict SET term_query = phraseto_tsquery('dicts_config', term);" | psql -d term_matching_db -U term_matcher -q
     # NOTE: Check loose_notes.md!
 
@@ -124,7 +129,7 @@ _test_case() {
     echo "INSERT INTO test_collections VALUES ('$collection_name', '$description', '${query_insertable}')" | psql -d term_matching_db -U term_matcher -q
 
 
-    counter="9"
+    counter="$counter_start"
     for i in "${dictionaries[@]}"; do
         for j in "${documents[@]}"; do
             counter=$((counter + 1))
