@@ -28,7 +28,7 @@
 
 ## Final thoughts
 
-### Main diffuculties
+### Main difficulties
 
 1) Scripting (enourmous number of errors and problems with python modules)
 2) Generating data (because of errors in scripts and unstable internet connection)
