@@ -23,7 +23,7 @@ SELECT * FROM tests;
  1338 | 1-1-10  | 2021-06-16 00:42:18.469682 | 1-1           | wiki_cogn_small   |          153 | Relativity_0  |          11019 | 00:00:00.142   |       5
  1339 | 1-1-11  | 2021-06-16 00:42:18.755672 | 1-1           | wiki_cogn_small   |          153 | Relativity_1  |          23575 | 00:00:00.245   |       8
  1340 | 1-1-12  | 2021-06-16 00:42:19.183726 | 1-1           | wiki_cogn_small   |          153 | Relativity_2  |          35096 | 00:00:00.388   |       8
- 1341 | 1-1-13  | 2021-06-16 00:42:19.478594 | 1-1           | wiki_cogn_medium  |          306 | Relativity(strip(to_tsvector('english', dicts.{name}.term)))_0  |          11019 | 00:00:00.252   |      17
+ 1341 | 1-1-13  | 2021-06-16 00:42:19.478594 | 1-1           | wiki_cogn_medium  |          306 | Relativity_0  |          11019 | 00:00:00.252   |      17
  1342 | 1-1-14  | 2021-06-16 00:42:20.02892  | 1-1           | wiki_cogn_medium  |          306 | Relativity_1  |          23575 | 00:00:00.508   |      20
  1343 | 1-1-15  | 2021-06-16 00:42:20.817728 | 1-1           | wiki_cogn_medium  |          306 | Relativity_2  |          35096 | 00:00:00.745   |      20
  1344 | 1-1-16  | 2021-06-16 00:42:21.333059 | 1-1           | wiki_cogn         |          613 | Relativity_0  |          11019 | 00:00:00.473   |      34
@@ -172,7 +172,7 @@ First, the word _"norm"_ is a false positive, words such as _"normally"_ do appe
 
 All the queries have different characteristics:
 
-* __1__: Can match _"logic"_ in _"phsycoligically"_, prone to false positives, cannot match phrases
+* __1__: Can match _"logic"_ in _"phsycoligically"_, prone to false positives, can match phrases if they appear exactly as in the dictionary
 * __2__: Does not return any false positives but also can match only exactly identical to terms words and cannot match phrases.
 * __3__: Can match phrases and return some (few) false positives but retruns less matches than nr __4__
 * __4__: Can match phrases and return some false positives, more matches than nr __3__
