@@ -61,5 +61,3 @@ for i in range(sizes):
         db.commit()
     except:
         print("Failed to insert the text into the database.")
-
-    print("Data successfully committed to the database!")
