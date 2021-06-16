@@ -43,8 +43,11 @@ LIMIT 1;
  test_id |     dict_name     | dict_entries | document_name | document_words | execution_time 
 ---------+-------------------+--------------+---------------+----------------+----------------
  3-2-7   | wiki_alpha        |        17520 | BNW_0         |           6030 | 03:42:03.503
+ --almost 4 hours!
 
 ```
+
+Some tests were excluded after some errors which resulted in unordered collection ids.
 
 # The most reliable
 
@@ -183,15 +186,88 @@ Query nr __4__ might be considered the most reliable unless false positives on p
 
 # The fastest and the best scalling
 
+First it may be desired to sort queries by execution time on a given data set:
+
+```sql
+SELECT collection_id, query, descr, avg(execution_time)
+FROM tests INNER JOIN test_collections ON test_collections.id = collection_id
+WHERE
+    dict_name = 'wiki_alpha' AND
+    document_name = 'BNW_2'
+GROUP BY (collection_id, query, descr)
+ORDER BY avg ASC;
+```
+
+What will be found then in the case of *wiki_alpha* and *BNW_2* is that the best performing are queries from set 1. In particular the fastest is the query which parses text into table of words and tries to find exactly the same words in the dictionary of term. 
+
+```sql
+-- the query returned from test_collections table as the fastest executing on a given sample
+SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?"]*[[:space:]]+|\.)') tokens 
+INTO TEMPORARY words FROM docs 
+WHERE docs.title = 'DOC'; 
+SELECT count(dicts.DICT.id) 
+FROM dicts.DICT, words 
+WHERE words.tokens = dicts.DICT.term;
+```
+
+The query exists in three variations as a test: with no index, with btree index, and hash index. Execution times of these are so short that it cannot be specified with such small sample which of those executes fastest (it can be guessed that it may be the one with hash index however). 
+
+The second fastest executing is the query based on ILIKE operator.
+
+```sql
+SELECT count(dicts.DICT.id) 
+FROM dicts.DICT, docs 
+WHERE docs.document ILIKE concat('%', dicts.DICT.term, '%') AND docs.title = 'DOC';
+```
+The third is the query using levenshtein distance.
+
+```sql
+-- query using an optimized version of function calculating levenshtein distance
+SELECT regexp_split_to_table(lower(docs.document), '([\.\;\,\:\?"]*[[:space:]]+|\.)') tokens 
+INTO TEMPORARY words FROM docs 
+WHERE docs.title = 'DOC'; 
+SELECT count(dicts.DICT.id) 
+FROM dicts.DICT, words 
+WHERE levenshtein_less_equal(words.tokens, dicts.DICT.term, 1) <= 1;
+```
+
+All the queries using text search functions of Postgres came after that (last).
+
+## Average per entry or word
+
+To see how long on average executed per each word of text or each entry in the dictionary:
 
 ```sql
 SELECT collection_id, 
     avg(execution_time / dict_entries) AS average_execution_per_entry,
     avg(execution_time / document_words) AS average_execution_per_word 
-INTO TEMPORARY avg_per 
+INTO TEMPORARY avg_per -- the table will be used later
 FROM tests
 GROUP BY collection_id;
 
+SELECT * FROM avg_per ORDER BY collection_id;
+
+ collection_id | average_execution_per_entry | average_execution_per_word 
+---------------+-----------------------------+----------------------------
+ 1-1           | 00:00:00.001661             | 00:00:00.000025
+ 1-3           | 00:00:00.000012             | 00:00:00
+ 1-4           | 00:00:00.000011             | 00:00:00
+ 1-5           | 00:00:00.000012             | 00:00:00
+ 2-1           | 00:00:00.023206             | 00:00:00.000356
+ 2-2           | 00:00:00.023399             | 00:00:00.000359
+ 3-2           | 00:00:00.037573             | 00:00:00.000575
+ 3-3           | 00:00:00.040846             | 00:00:00.000676
+ 4-1           | 00:00:00.006657             | 00:00:00.000102
+ 4-2           | 00:00:00.002528             | 00:00:00.000039
+
+```
+What may be surprising is that we obtained some zeroes for the average execution times per X of tests 1-3, 1-4, 1-5. Those are the queries that were noted as executing the fastest. Most likely the results of division were just too small.
+
+## Scalling
+
+To see which queries increasd their execution times the fastest as particular factors (number of words or entries) changed the correlation between those can be analyzed: 
+
+```sql
 SELECT collection_id, corr(extract(millisecond from execution_time), dict_entries)
     AS corr_time_entries,
     corr(extract(millisecond from execution_time), document_words)
@@ -201,43 +277,74 @@ FROM tests
 GROUP BY collection_id
 ORDER BY collection_id;
 
-SELECT avg_per.collection_id, corr_time_entries, average_execution_per_entry, query AS query_which_entries_scaled_quickest
+SELECT * FROM correlations ORDER BY collection_id;
+
+ collection_id |   corr_time_entries   |  corr_time_words   
+---------------+-----------------------+--------------------
+ 1-1           |    0.7389588170505224 | 0.5955215114074272
+ 1-3           |  0.040435665505373815 |  0.836830316944089
+ 1-4           |   0.07502927893195839 | 0.9349687081991315
+ 1-5           | -0.017198994996155213 | 0.7459563964974941
+ 2-1           |    0.7424903045196033 | 0.5912299931930896
+ 2-2           |    0.7399300871749407 | 0.5918817489907435
+ 3-2           |    0.6950105284922827 | 0.4564570931725876
+ 3-3           |    0.7864563101826214 | 0.5232363846459195
+ 4-1           |    0.7464957420036574 |  0.587805354429871
+ 4-2           |    0.7503190159759695 | 0.5969340199855534
+```
+
+Execution time scalling with entries:
+
+```sql
+SELECT avg_per.collection_id, corr_time_entries, average_execution_per_entry
 FROM test_collections
 INNER JOIN correlations ON correlations.collection_id = test_collections.id
 INNER JOIN avg_per ON avg_per.collection_id = test_collections.id
 ORDER BY @ corr_time_entries DESC
 LIMIT 3;
 
-SELECT avg_per.collection_id, corr_time_entries, average_execution_per_entry, query AS query_which_entries_scaled_least
-FROM test_collections
-INNER JOIN correlations ON correlations.collection_id = test_collections.id
-INNER JOIN avg_per ON avg_per.collection_id = test_collections.id
-ORDER BY @ corr_time_entries ASC
-LIMIT 3;
+-- execution time increasing with the number of entries
+ collection_id | corr_time_entries  | average_execution_per_entry 
+---------------+--------------------+-----------------------------
+ 3-3           | 0.7864563101826214 | 00:00:00.040846
+ 4-2           | 0.7503190159759695 | 00:00:00.002528
+ 4-1           | 0.7464957420036574 | 00:00:00.006657
 
-SELECT avg_per.collection_id, corr_time_words, average_execution_per_word, query AS query_which_words_scaled_quickest
-FROM test_collections
-INNER JOIN correlations ON correlations.collection_id = test_collections.id
-INNER JOIN avg_per ON avg_per.collection_id = test_collections.id
-ORDER BY @ corr_time_words DESC
-LIMIT 3;
 
-SELECT avg_per.collection_id, corr_time_entries, average_execution_per_word, query AS query_which_words_scaled_least
-FROM test_collections
-INNER JOIN correlations ON correlations.collection_id = test_collections.id
-INNER JOIN avg_per ON avg_per.collection_id = test_collections.id
-ORDER BY @ corr_time_entries ASC
-LIMIT 3;
+... ORDER BY @ corr_time_entries ASC ...
+
+-- execution time least affected by the number of entries
+ collection_id |   corr_time_entries   | average_execution_per_entry 
+---------------+-----------------------+-----------------------------
+ 1-5           | -0.017198994996155213 | 00:00:00.000012
+ 1-3           |  0.040435665505373815 | 00:00:00.000012
+ 1-4           |   0.07502927893195839 | 00:00:00.000011
 ```
 
-The query which scaled the worst with the increasing number of entries: test case 2-3 `SELECT to_tsvector(docs.documet) @@ to_tsquery( array_to_string( ARRAY( SELECT dicts.DICT.term FROM dicts.DICT ), ' | ' )::text ) AS does_it_contain FROM docs WHERE docs.title = 'DOC';`
+Execution time scalling with words:
 
-The query which scaled the best with increasing number of entries: test case 2-2 `SELECT count(dicts.DICT.id) FROM dicts.DICT, docs WHERE to_tsvector(docs.documet) @@ dicts.DICT.term_query AND docs.title = 'DOC';`
+```sql
+... ORDER BY @ corr_time_words DESC ...
 
-The query which scaled the worst with the increasing number of words:
+-- execution time increasing with the number of words
+ collection_id |  corr_time_words   | average_execution_per_word 
+---------------+--------------------+----------------------------
+ 1-4           | 0.9349687081991315 | 00:00:00
+ 1-3           |  0.836830316944089 | 00:00:00
+ 1-5           | 0.7459563964974941 | 00:00:00
 
+
+... ORDER BY @ corr_time_words ASC ...
+
+-- execution time least affected by the number of words
+ collection_id |  corr_time_words   | average_execution_per_word 
+---------------+--------------------+----------------------------
+ 3-2           | 0.4564570931725876 | 00:00:00.000575
+ 3-3           | 0.5232363846459195 | 00:00:00.000676
+ 4-1           |  0.587805354429871 | 00:00:00.000102
+```
 
 # The most disappointing
 
-Queries that used Postgres full text search functionalities with a default configuration executed the slowest and returned few matches. 
+Queries that used Postgres full text search functionalities with a default configuration executed the slowest and returned few matches. The queries that used a custom configuration executed slower than the ones using a default configuration for English language. The difference between those two configurations was the use of extra synonym and thesaurus dictionaries. 
 
