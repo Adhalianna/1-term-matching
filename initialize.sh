@@ -7,7 +7,7 @@ echo "---"
 pip install wikipedia
 pip install psycopg2-binary
 pip install pdftotext
-pip install nltk
+#pip install nltk
 
 echo "---"
 echo "PROCEEDING TO CREATE A NEW DATABASE..."
