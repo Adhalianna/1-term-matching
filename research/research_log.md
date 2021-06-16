@@ -1,3 +1,5 @@
+# Resarch log
+
 * Started with research on term matching in general. Learnt about inverse indexes used full-text search problems e.g. in Lucene search engine. Some of the first findings in that matter included:
   * Some youtube videos about how Lucene works: ["Text search with Lucene"](https://www.youtube.com/watch?v=x37B_lCi_gc)
   * A [wikipedia article](https://en.wikipedia.org/wiki/Inverted_index) about inverted indexes
@@ -15,9 +17,34 @@
 * Moved on to generating dictionaries. Found a wikipedia module for Python. Started to learn to use Python and psycopg2. 
 * The first attempt at generating a dictionary involved a file with a list of terms which definitions would be queried. It turned out to be an ineffective way of collecting sample data.
 * Added a script that parsed pdf to plain text that could be inserted into database.
-* A lot of time was spent on polishing the script that genereted dictionaries using Wikipedia API. First tests on dictionaries created this way with entries around 2000, 20000 seemed to give unreliable results (execution time less than 1s). Because of that many attempts were done to achieve a much bigger dictionary (70000 entries). The script would crash for multiple reasons mid exuction. To collect around 70000 entries the script was running whole day. Most common reason of a crash was lost internet connection. However, later it turned out that some queries perform much worse than expected (80 minutes) and much worse than what was considered to be a naive solution. Nevertheless, a resourceful machine (16 threads, 32GB RAM) was discovered to be a nuisance in some cases.
+* A lot of time was spent on polishing the script that genereted dictionaries using Wikipedia API. First tests on dictionaries created this way with entries around 2000, 20000 seemed to give unreliable results (execution time less than 1s). Because of that many attempts were done to achieve a much bigger dictionary (70000 entries). The script would crash for multiple reasons mid exuction. To collect around 70000 entries the script was running whole day. Most common reason of a crash was lost internet connection. However, later it turned out that some queries perform much worse than expected (80 minutes) and much worse than what was considered to be a naive solution. Nevertheless, a resourceful machine (16 threads, 32GB RAM, SSD) was discovered to be a nuisance in some cases.
 * Started creating tests (benchmarks) which after a while had to be refactored to be able to write them faster and collect results inside the database.
 * One of test cases based on regex had to be excluded because of parsing problems (see [loose_notes](loose_notes.md))
 * Expanded knowledge about PostgreSQL and SQL greatly.
 * During testing found some interesting results in the net about a _fuzzystrmatch_ module for Postgres. Added new tests using the module.
 * After several problems with benchmarks the sample data was reconsidered.
+* Many more fixes and refactorizations were done to the tests after that.
+* The test execution logs were analyzed with a help of some queries all of which was summarized in the [report.md](../results/report.md) file.
+
+## Final thoughts
+
+### Main diffuculties
+
+1) Scripting (enourmous number of errors and problems with python modules)
+2) Generating data (because of errors in scripts and unstable internet connection)
+3) Unexpectedly poor performance of some queries
+4) Not testing enough early enough
+5) Overindulging in unnecessary research
+6) Messy scripting
+
+### Areas that could be improved
+
+* Enable usage of language different than english
+* Improve test generation and benchmarking experience
+* Generate dictionaries with wordnet
+* More tested queries, more clever queries, more queries based on regex and ilike as those performed the best
+* Refactoring and documenting code
+* Running more tests
+* Fetching sample texts from the internet, like dictionaries, instead of relying on PDF files.
+
+<!-- But, isn't completing anything a success already? -->
